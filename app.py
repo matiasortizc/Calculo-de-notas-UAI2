@@ -45,7 +45,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🎓 Calculadora Dinámica de NP - UAI")
+st.title("🎓 Calculadora Dinámica. MATIAS ORTIZ - UAI")
 st.caption("Configura tus asignaturas asegurando que los porcentajes sumen exactamente 100%. Guardado automático disponible vía respaldo.")
 
 # ---------------------------------------------------------
