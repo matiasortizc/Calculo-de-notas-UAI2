@@ -1,34 +1,11 @@
 import streamlit as st
 import pandas as pd
 import json
-import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Calculadora de Notas UAI", page_icon="🎓", layout="wide")
 
 st.title("🎓 Calculadora Dinámica de NP - UAI")
-st.caption("Tus notas y configuraciones se guardan automáticamente en tu navegador para que no pierdas tu información al volver a entrar.")
-
-# ---------------------------------------------------------
-# COMPONENTE JAVASCRIPT PARA PERSISTENCIA EN LOCALSTORAGE
-# ---------------------------------------------------------
-def init_local_storage():
-    """Inyecta JavaScript para leer/guardar datos en localStorage"""
-    storage_code = """
-    <script>
-    // Guardar datos en localStorage
-    window.saveToLocal = function(key, data) {
-        localStorage.setItem(key, JSON.stringify(data));
-    };
-    
-    // Cargar datos de localStorage
-    window.loadFromLocal = function(key) {
-        return JSON.parse(localStorage.getItem(key)) || {};
-    };
-    </script>
-    """
-    components.html(storage_code, height=0)
-
-init_local_storage()
+st.caption("Guarda y recupera tus notas en cualquier momento con los botones de exportar e importar.")
 
 # ---------------------------------------------------------
 # FUNCIONES DE FORMATO Y CONVERSIÓN DE NOTAS (Ej: 53 -> 5,3)
@@ -49,6 +26,25 @@ def formatear_con_coma(num):
     if isinstance(num, (int, float)):
         return f"{num:.1f}".replace('.', ',')
     return str(num).replace('.', ',')
+
+# ---------------------------------------------------------
+# SISTEMA DE GUARDADO / CARGA DE ARCHIVO
+# ---------------------------------------------------------
+with st.sidebar:
+    st.header("💾 Respaldar y Cargar Notas")
+    
+    # Cargar respaldo
+    uploaded_file = st.file_uploader("Subir respaldo previo (.json)", type=["json"])
+    if uploaded_file is not None:
+        try:
+            saved_data = json.load(uploaded_file)
+            for k, v in saved_data.items():
+                st.session_state[k] = v
+            st.success("✅ ¡Notas cargadas exitosamente!")
+        except Exception as e:
+            st.error("Error al cargar el archivo de respaldo.")
+
+    st.divider()
 
 # ---------------------------------------------------------
 # 1. PASO DE CONFIGURACIÓN (REPLEGABLE)
@@ -141,7 +137,6 @@ for ramo in df_panel["Asignatura"].unique():
 # 3. PANEL DE CONTROL (TABLAS DIVIDIDAS POR ASIGNATURA)
 # ---------------------------------------------------------
 st.subheader("📝 Panel de Control de Notas")
-st.caption("Ingresa notas en formato entero (ej: 53, 70) o decimal (ej: 5.3, 5,3). Toda la información se guarda automáticamente en este dispositivo.")
 
 df_actualizado = df_panel.copy()
 resumen_resultados = []
@@ -181,7 +176,6 @@ for ramo in df_panel["Asignatura"].unique():
             c4.info(f"🎯 Requerida: **{nota_req_txt}**")
             df_actualizado.at[idx, "Rendida"] = False
             
-    # Resumen por asignatura
     df_ramo_act = df_actualizado[df_actualizado["Asignatura"] == ramo]
     df_rendidas = df_ramo_act[df_ramo_act["Rendida"] == True]
     sum_pond_rendida = df_rendidas["_pond_dec"].sum()
@@ -214,6 +208,17 @@ for ramo in df_panel["Asignatura"].unique():
     })
     
     st.divider()
+
+# Botón para descargar el respaldo en la barra lateral
+with st.sidebar:
+    datos_exportar = {k: v for k, v in st.session_state.items() if isinstance(v, (int, float, str, bool))}
+    json_str = json.dumps(datos_exportar, indent=2)
+    st.download_button(
+        label="📥 Descargar Respaldo de Notas",
+        data=json_str,
+        file_name="mis_notas_uai.json",
+        mime="application/json"
+    )
 
 # ---------------------------------------------------------
 # 4. RESUMEN COMPARATIVO FINAL
