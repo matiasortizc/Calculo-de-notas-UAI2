@@ -111,4 +111,22 @@ for ramo in df_editado["Asignatura"].unique():
     if sum_pond_pendiente > 0:
         puntos_necesarios = (4.0 * sum_pond_total) - puntos_actuales
         if puntos_necesarios <= 0:
-            nota_req = "
+            nota_req = "1.0 (¡Ya aprobaste!)"
+        else:
+            promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
+            if promedio_req > 7.0:
+                nota_req = f"{promedio_req} ⚠️ (Imposible)"
+            else:
+                nota_req = f"{promedio_req}"
+    else:
+        nota_req = "Sin evaluaciones pendientes"
+        
+    resumen_resultados.append({
+        "Asignatura": ramo,
+        "NP Actual (Evaluado)": np_actual,
+        "% Evaluado": f"{int(sum_pond_rendida * 100)}%",
+        "Evaluaciones Pendientes": cant_pendientes,
+        "Nota promedio requerida en pendientes (para 4.0)": nota_req
+    })
+
+st.dataframe(pd.DataFrame(resumen_resultados), use_container_width=True)
