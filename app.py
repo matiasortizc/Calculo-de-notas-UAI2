@@ -3,8 +3,23 @@ import pandas as pd
 
 st.set_page_config(page_title="Calculadora de Notas UAI", page_icon="🎓", layout="wide")
 
-st.title("🎓 Calculadora Interactiva de NP - UAI")
-st.caption("Configura tus ramos y visualiza automáticamente la nota mínima que necesitas en cada evaluación pendiente para aprobar con 4.0.")
+st.title("🎓 Calculadora Dinámica de NP - UAI")
+st.caption("Ingresa o modifica tus notas. El panel recalcula instantáneamente la nota mínima que necesitas en el resto de tus evaluaciones pendientes para promediar 4.0.")
+
+# ---------------------------------------------------------
+# FUNCIÓN DE FORMATO Y CONVERSIÓN DE NOTAS (Ej: 70 -> 7.0)
+# ---------------------------------------------------------
+def normalizar_nota(valor):
+    try:
+        val = float(valor)
+        # Si ingresa enteros tipo 10-70 (ej: 55, 70, 39)
+        if val >= 10.0 and val <= 70.0:
+            val = val / 10.0
+        # Limitar en el rango real de notas de 1.0 a 7.0
+        val = max(1.0, min(7.0, val))
+        return round(val, 2)
+    except:
+        return 1.0
 
 # ---------------------------------------------------------
 # 1. PASO DE CONFIGURACIÓN (REPLEGABLE)
@@ -44,34 +59,41 @@ with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expan
         st.divider()
 
 # ---------------------------------------------------------
-# 2. PROCESAMIENTO Y CÁLCULO DE NOTAS MÍNIMAS
+# 2. PROCESAMIENTO DINÁMICO EN TIEMPO REAL
 # ---------------------------------------------------------
-lista_filas_iniciales = []
+lista_filas = []
+
 for ramo, evals in estructura_ramos.items():
     for e in evals:
-        # Se obtiene el estado previo de si fue rendida o la nota ingresada (mantiene la sesión)
-        rendida = st.session_state.get(f"rend_{ramo}_{e['Evaluación']}", False)
-        nota_ingresada = st.session_state.get(f"nota_{ramo}_{e['Evaluación']}", 5.0)
+        key_rendida = f"rend_{ramo}_{e['Evaluación']}"
+        key_nota = f"nota_{ramo}_{e['Evaluación']}"
         
-        lista_filas_iniciales.append({
+        # Recuperar estado ingresado
+        rendida = st.session_state.get(key_rendida, False)
+        nota_raw = st.session_state.get(key_nota, 5.0)
+        nota_limpia = normalizar_nota(nota_raw)
+        
+        lista_filas.append({
             "Asignatura": e["Asignatura"],
             "Evaluación": e["Evaluación"],
             "Ponderación (%)": e["Ponderación (%)"],
             "Rendida": rendida,
-            "Nota Obtenida / Requerida": nota_ingresada if rendida else 1.0,
-            "_pond_dec": e["_pond_dec"]
+            "Nota Obtenida / Requerida": nota_limpia,
+            "_pond_dec": e["_pond_dec"],
+            "_key_rend": key_rendida,
+            "_key_nota": key_nota
         })
 
-if not lista_filas_iniciales:
-    st.info("👈 Abre la pestaña de arriba '⚙️ Configuración Inicial' para seleccionar las evaluaciones de tus ramos.")
+if not lista_filas:
+    st.info("👈 Abre '⚙️ Configuración Inicial' arriba para estructurar tus asignaturas.")
     st.stop()
 
-df_base = pd.DataFrame(lista_filas_iniciales)
+df_panel = pd.DataFrame(lista_filas)
 
-# Cálculo dinámico de la nota requerida para los ítems no rendidos
-for ramo in df_base["Asignatura"].unique():
-    mask_ramo = df_base["Asignatura"] == ramo
-    df_ramo = df_base[mask_ramo]
+# Recálculo instantáneo de la nota requerida para los pendientes
+for ramo in df_panel["Asignatura"].unique():
+    mask_ramo = df_panel["Asignatura"] == ramo
+    df_ramo = df_panel[mask_ramo]
     
     df_rendidas = df_ramo[df_ramo["Rendida"] == True]
     puntos_actuales = (df_rendidas["Nota Obtenida / Requerida"] * df_rendidas["_pond_dec"]).sum()
@@ -83,44 +105,63 @@ for ramo in df_base["Asignatura"].unique():
     if sum_pond_pendiente > 0:
         puntos_necesarios = (4.0 * sum_pond_total) - puntos_actuales
         promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
-        # Asegurar límite de escala 1.0 a 7.0
         promedio_req = max(1.0, min(7.0, promedio_req))
         
-        # Asignar la nota mínima calculada a las filas no rendidas
-        df_base.loc[mask_ramo & (df_base["Rendida"] == False), "Nota Obtenida / Requerida"] = promedio_req
+        # Asignar automáticamente el cálculo actualizado a las filas no rendidas
+        df_panel.loc[mask_ramo & (df_panel["Rendida"] == False), "Nota Obtenida / Requerida"] = promedio_req
 
 # ---------------------------------------------------------
-# 3. PANEL DE CONTROL DE NOTAS (EDITABLE)
+# 3. PANEL INTERACTIVO DE CONTROL DE NOTAS
 # ---------------------------------------------------------
 st.subheader("📝 Panel de Control de Notas")
-st.write("• Si **no has rendido** una evaluación, verás la **nota mínima requerida** para promediar un 4.0.\n• Marca la casilla **¿Rendida?** para activar la celda e ingresar tu nota real obtenido.")
+st.caption("Paso 1: Marca '¿Rendida?' | Paso 2: Ingresa la nota en formato entero (ej: 70, 55, 40) o decimal (ej: 7.0, 5.5, 4.0).")
 
-df_editado = st.data_editor(
-    df_base,
-    column_config={
-        "Asignatura": st.column_config.TextColumn("Asignatura", disabled=True),
-        "Evaluación": st.column_config.TextColumn("Evaluación", disabled=True),
-        "Ponderación (%)": st.column_config.NumberColumn("Ponderación (%)", format="%.1f%%", disabled=True),
-        "Rendida": st.column_config.CheckboxColumn("¿Rendida?"),
-        "Nota Obtenida / Requerida": st.column_config.NumberColumn(
-            "Nota (Obtenida / Requerida)", min_value=1.0, max_value=7.0, step=0.1, format="%.2f"
-        ),
-        "_pond_dec": None
-    },
-    hide_index=True,
-    use_container_width=True
-)
+# Renderizar controles interactivos fila por fila para actualización inmediata
+df_actualizado = df_panel.copy()
+
+cols_headers = st.columns([2, 2, 1.5, 1.5, 2.5])
+cols_headers[0].markdown("**Asignatura**")
+cols_headers[1].markdown("**Evaluación**")
+cols_headers[2].markdown("**Ponderación**")
+cols_headers[3].markdown("**¿Rendida?**")
+cols_headers[4].markdown("**Nota (Obtenida / Requerida)**")
+
+for idx, row in df_panel.iterrows():
+    c1, c2, c3, c4, c5 = st.columns([2, 2, 1.5, 1.5, 2.5])
+    
+    c1.write(row["Asignatura"])
+    c2.write(row["Evaluación"])
+    c3.write(f"{row['Ponderación (%)']}%")
+    
+    # Casilla Rendida con actualización en tiempo real
+    es_rendida = c4.checkbox("", value=row["Rendida"], key=row["_key_rend"])
+    
+    if es_rendida:
+        # Permite al usuario escribir 70, 55, 4.0, etc.
+        val_input = c5.text_input(
+            label=f"Nota para {row['Evaluación']}",
+            value=str(row["Nota Obtenida / Requerida"]),
+            key=row["_key_nota"],
+            label_visibility="collapsed"
+        )
+        nota_final = normalizar_nota(val_input)
+        df_actualizado.at[idx, "Nota Obtenida / Requerida"] = nota_final
+        df_actualizado.at[idx, "Rendida"] = True
+    else:
+        # Muestra en vivo la nota calculada requerida
+        c5.info(f"🎯 Requerida: **{row['Nota Obtenida / Requerida']:.2f}**")
+        df_actualizado.at[idx, "Rendida"] = False
 
 # ---------------------------------------------------------
-# 4. RESUMEN FINAL DE ESTADO
+# 4. RESUMEN Y PROYECCIÓN
 # ---------------------------------------------------------
 st.divider()
-st.subheader("📊 Resumen y Proyección de Nota de Presentación (NP)")
+st.subheader("📊 Resumen y Estado en Tiempo Real")
 
 resumen_resultados = []
 
-for ramo in df_editado["Asignatura"].unique():
-    df_ramo = df_editado[df_editado["Asignatura"] == ramo]
+for ramo in df_actualizado["Asignatura"].unique():
+    df_ramo = df_actualizado[df_actualizado["Asignatura"] == ramo]
     
     df_rendidas = df_ramo[df_ramo["Rendida"] == True]
     sum_pond_rendida = df_rendidas["_pond_dec"].sum()
@@ -130,27 +171,26 @@ for ramo in df_editado["Asignatura"].unique():
     
     df_pendientes = df_ramo[df_ramo["Rendida"] == False]
     sum_pond_pendiente = df_pendientes["_pond_dec"].sum()
-    cant_pendientes = len(df_pendientes)
     sum_pond_total = df_ramo["_pond_dec"].sum()
     
     if sum_pond_pendiente > 0:
         puntos_necesarios = (4.0 * sum_pond_total) - puntos_actuales
         promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
         if promedio_req > 7.0:
-            estado_req = f"{promedio_req} ⚠️ (Imposible con 4.0)"
+            estado_req = f"{promedio_req} ⚠️ (Imposible llegar al 4.0)"
         elif promedio_req <= 1.0:
             estado_req = "1.0 (¡Ya aseguraste el 4.0!)"
         else:
             estado_req = f"{promedio_req}"
     else:
-        estado_req = "Sin pendientes"
+        estado_req = "Sin evaluaciones pendientes"
         
     resumen_resultados.append({
         "Asignatura": ramo,
-        "NP Actual (Solo Rendido)": np_actual,
+        "NP Actual (Evaluado)": np_actual,
         "% Evaluado": f"{int(sum_pond_rendida * 100)}%",
-        "Evaluaciones Pendientes": cant_pendientes,
-        "Nota mínima requerida en pendientes (para 4.0)": estado_req
+        "Evaluaciones Pendientes": len(df_pendientes),
+        "Nota promedio requerida en pendientes (para 4.0)": estado_req
     })
 
 st.dataframe(pd.DataFrame(resumen_resultados), use_container_width=True)
