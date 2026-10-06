@@ -5,24 +5,37 @@ import json
 st.set_page_config(page_title="Calculadora de Notas UAI", page_icon="🎓", layout="wide")
 
 # ---------------------------------------------------------
-# ESTILOS CSS - FONDO AZUL CLARO PERSONALIZADO
+# ESTILOS CSS - TEMA AZUL OSCURO (DARK BLUE)
 # ---------------------------------------------------------
 st.markdown("""
     <style>
-    /* Fondo principal azul claro */
+    /* Fondo principal Azul Oscuro */
     .stApp {
-        background-color: #EBF3FA !important;
+        background-color: #0B192C !important;
+        color: #F1F5F9 !important;
     }
     
-    /* Fondo de la barra lateral en azul un poco más marcado */
+    /* Barra lateral (Sidebar) en Azul marino profundo */
     section[data-testid="stSidebar"] {
-        background-color: #D9E8F5 !important;
+        background-color: #1E3E62 !important;
     }
     
-    /* Tarjetas, desplegables y casillas en blanco para mantener legibilidad */
+    /* Modificar color del texto general e instrucciones */
+    .stApp p, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp span {
+        color: #F1F5F9 !important;
+    }
+    
+    /* Tarjetas, desplegables y entradas en azul intermedio con texto blanco */
     div[data-testid="stExpander"], div[data-baseweb="input"], .stTextInput input, .stNumberInput input {
-        background-color: #FFFFFF !important;
+        background-color: #1E293B !important;
+        color: #FFFFFF !important;
+        border: 1px solid #334155 !important;
         border-radius: 8px;
+    }
+    
+    /* Ajuste para inputs de texto activos */
+    .stTextInput input:focus, .stNumberInput input:focus {
+        border-color: #38BDF8 !important;
     }
     
     /* Contenedores de información */
