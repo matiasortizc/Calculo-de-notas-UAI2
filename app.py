@@ -4,6 +4,34 @@ import json
 
 st.set_page_config(page_title="Calculadora de Notas UAI", page_icon="🎓", layout="wide")
 
+# ---------------------------------------------------------
+# ESTILOS CSS - FONDO AZUL CLARO PERSONALIZADO
+# ---------------------------------------------------------
+st.markdown("""
+    <style>
+    /* Fondo principal azul claro */
+    .stApp {
+        background-color: #EBF3FA !important;
+    }
+    
+    /* Fondo de la barra lateral en azul un poco más marcado */
+    section[data-testid="stSidebar"] {
+        background-color: #D9E8F5 !important;
+    }
+    
+    /* Tarjetas, desplegables y casillas en blanco para mantener legibilidad */
+    div[data-testid="stExpander"], div[data-baseweb="input"], .stTextInput input, .stNumberInput input {
+        background-color: #FFFFFF !important;
+        border-radius: 8px;
+    }
+    
+    /* Contenedores de información */
+    .stAlert {
+        border-radius: 8px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("🎓 Calculadora Dinámica de NP - UAI")
 st.caption("Configura tus asignaturas asegurando que los porcentajes sumen exactamente 100%. Guardado automático disponible vía respaldo.")
 
@@ -60,7 +88,6 @@ with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expan
         
         cols = st.columns(4)
         pct_acumulado = 0
-        cat_seleccionadas = []
         
         for idx, cat in enumerate(categorias):
             with cols[idx]:
@@ -69,7 +96,6 @@ with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expan
                 if tiene:
                     cant = st.number_input(f"Cantidad de {cat}:", min_value=1, max_value=10, value=2, key=f"conf_cant_{cat}_{i}")
                     
-                    # Calcular el porcentaje que queda libre automáticamente
                     pct_restante = max(0, 100 - pct_acumulado)
                     val_defecto = 20 if pct_restante >= 20 else pct_restante
                     
@@ -93,7 +119,6 @@ with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expan
                             "_pond_dec": pond_indiv
                         })
 
-        # Alerta sobre el total acumulado de porcentaje en la asignatura
         if pct_acumulado == 100:
             st.success("✅ ¡Perfecto! Los porcentajes de las evaluaciones suman el 100%.")
         elif pct_acumulado < 100:
@@ -135,7 +160,6 @@ if not lista_filas:
 
 df_panel = pd.DataFrame(lista_filas)
 
-# Recálculo de notas mínimas requeridas en pendientes
 for ramo in df_panel["Asignatura"].unique():
     mask_ramo = df_panel["Asignatura"] == ramo
     df_ramo = df_panel[mask_ramo]
@@ -212,7 +236,7 @@ for ramo in df_panel["Asignatura"].unique():
         puntos_necesarios = (4.0 * sum_pond_total) - puntos_actuales
         promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
         if promedio_req > 7.0:
-            estado_req = f"{formatear_con_coma(promedio_req)} ⚠️️ (Imposible llegar al 4.0)"
+            estado_req = f"{formatear_con_coma(promedio_req)} ⚠️ (Imposible llegar al 4.0)"
         elif promedio_req <= 1.0:
             estado_req = "1,0 (¡Ya aseguraste el 4.0!)"
         else:
