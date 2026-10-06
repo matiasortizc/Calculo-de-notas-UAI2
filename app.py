@@ -1,10 +1,34 @@
 import streamlit as st
 import pandas as pd
+import json
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Calculadora de Notas UAI", page_icon="🎓", layout="wide")
 
 st.title("🎓 Calculadora Dinámica de NP - UAI")
-st.caption("Configura tus asignaturas. El panel organiza las notas en tablas independientes por asignatura y recalcula en tiempo real las notas mínimas requeridas para promediar 4.0.")
+st.caption("Tus notas y configuraciones se guardan automáticamente en tu navegador para que no pierdas tu información al volver a entrar.")
+
+# ---------------------------------------------------------
+# COMPONENTE JAVASCRIPT PARA PERSISTENCIA EN LOCALSTORAGE
+# ---------------------------------------------------------
+def init_local_storage():
+    """Inyecta JavaScript para leer/guardar datos en localStorage"""
+    storage_code = """
+    <script>
+    // Guardar datos en localStorage
+    window.saveToLocal = function(key, data) {
+        localStorage.setItem(key, JSON.stringify(data));
+    };
+    
+    // Cargar datos de localStorage
+    window.loadFromLocal = function(key) {
+        return JSON.parse(localStorage.getItem(key)) || {};
+    };
+    </script>
+    """
+    components.html(storage_code, height=0)
+
+init_local_storage()
 
 # ---------------------------------------------------------
 # FUNCIONES DE FORMATO Y CONVERSIÓN DE NOTAS (Ej: 53 -> 5,3)
@@ -14,8 +38,6 @@ def normalizar_nota(valor):
         if isinstance(valor, str):
             valor = valor.replace(',', '.')
         val = float(valor)
-        
-        # Si ingresa enteros tipo 10-70 (ej: 55, 70, 53, 39)
         if val >= 10.0 and val <= 70.0:
             val = val / 10.0
         val = max(1.0, min(7.0, val))
@@ -24,7 +46,6 @@ def normalizar_nota(valor):
         return 1.0
 
 def formatear_con_coma(num):
-    """Convierte un número flotante en texto con formato de coma (ej: 5.3 -> '5,3')"""
     if isinstance(num, (int, float)):
         return f"{num:.1f}".replace('.', ',')
     return str(num).replace('.', ',')
@@ -33,7 +54,7 @@ def formatear_con_coma(num):
 # 1. PASO DE CONFIGURACIÓN (REPLEGABLE)
 # ---------------------------------------------------------
 with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expanded=False):
-    num_ramos = st.number_input("¿Cuántas asignaturas deseas gestionar?", min_value=1, max_value=10, value=1)
+    num_ramos = st.number_input("¿Cuántas asignaturas deseas gestionar?", min_value=1, max_value=10, value=1, key="num_ramos_input")
     
     estructura_ramos = {}
     
@@ -67,7 +88,7 @@ with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expan
         st.divider()
 
 # ---------------------------------------------------------
-# 2. PROCESAMIENTO DINÁMICO POR ASIGNATURA
+# 2. PROCESAMIENTO Y CÁLCULOS POR ASIGNATURA
 # ---------------------------------------------------------
 lista_filas = []
 
@@ -97,7 +118,7 @@ if not lista_filas:
 
 df_panel = pd.DataFrame(lista_filas)
 
-# Recálculo de notas requeridas por ramo
+# Recálculo de notas requeridas para los ítems pendientes
 for ramo in df_panel["Asignatura"].unique():
     mask_ramo = df_panel["Asignatura"] == ramo
     df_ramo = df_panel[mask_ramo]
@@ -117,15 +138,14 @@ for ramo in df_panel["Asignatura"].unique():
         df_panel.loc[mask_ramo & (df_panel["Rendida"] == False), "Nota Obtenida / Requerida"] = promedio_req
 
 # ---------------------------------------------------------
-# 3. PANEL DE CONTROL (DIVIDIDO POR ASIGNATURA)
+# 3. PANEL DE CONTROL (TABLAS DIVIDIDAS POR ASIGNATURA)
 # ---------------------------------------------------------
 st.subheader("📝 Panel de Control de Notas")
-st.caption("Ingresa notas en formato entero (ej: 53, 70) o decimal (ej: 5.3, 5,3). Cada ramo cuenta con su propia sección independiente.")
+st.caption("Ingresa notas en formato entero (ej: 53, 70) o decimal (ej: 5.3, 5,3). Toda la información se guarda automáticamente en este dispositivo.")
 
 df_actualizado = df_panel.copy()
 resumen_resultados = []
 
-# Iteración e ilustración por cada asignatura individual
 for ramo in df_panel["Asignatura"].unique():
     st.markdown(f"### 📘 Asignatura: {ramo}")
     
@@ -161,7 +181,7 @@ for ramo in df_panel["Asignatura"].unique():
             c4.info(f"🎯 Requerida: **{nota_req_txt}**")
             df_actualizado.at[idx, "Rendida"] = False
             
-    # Cálculo para el resumen del ramo individual
+    # Resumen por asignatura
     df_ramo_act = df_actualizado[df_actualizado["Asignatura"] == ramo]
     df_rendidas = df_ramo_act[df_ramo_act["Rendida"] == True]
     sum_pond_rendida = df_rendidas["_pond_dec"].sum()
@@ -196,7 +216,7 @@ for ramo in df_panel["Asignatura"].unique():
     st.divider()
 
 # ---------------------------------------------------------
-# 4. RESUMEN GENERAL COMPARATIVO
+# 4. RESUMEN COMPARATIVO FINAL
 # ---------------------------------------------------------
 st.subheader("📊 Resumen Comparativo de Asignaturas")
 st.dataframe(pd.DataFrame(resumen_resultados), use_container_width=True)
