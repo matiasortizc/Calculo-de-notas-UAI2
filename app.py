@@ -85,40 +85,73 @@ with st.sidebar:
     st.divider()
 
 # ---------------------------------------------------------
-# 1. CONFIGURACIÓN DE RAMOS Y AUTO-AJUSTE DE PORCENTAJES
+# DICCIONARIO DE PLANTILLAS DE RAMOS PREDETERMINADOS
+# ---------------------------------------------------------
+PLANTILLAS_RAMOS = {
+    "CALCULO INTEGRAL": {
+        "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 70},
+        "Controles": {"tiene": True, "cant": 3, "pct": 15},
+        "Laboratorio / Proyecto": {"tiene": True, "cant": 1, "pct": 15},
+        "Tareas": {"tiene": False, "cant": 1, "pct": 0}
+    },
+    "ALGEBRA LINEAL": {
+        "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 70},
+        "Controles": {"tiene": True, "cant": 3, "pct": 15},
+        "Laboratorio / Proyecto": {"tiene": True, "cant": 1, "pct": 15},
+        "Tareas": {"tiene": False, "cant": 1, "pct": 0}
+    }
+}
+
+# ---------------------------------------------------------
+# 1. CONFIGURACIÓN DE RAMOS Y EDICIÓN DE VALORES
 # ---------------------------------------------------------
 with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expanded=True):
-    num_ramos = st.number_input("¿Cuántas asignaturas deseas gestionar?", min_value=1, max_value=10, value=1, key="num_ramos_input")
+    
+    st.markdown("### 📚 Seleccionar Ramos Predeterminados")
+    ramos_pred_sel = st.multiselect(
+        "Selecciona las asignaturas predefinidas que cursas:",
+        options=list(PLANTILLAS_RAMOS.keys()),
+        default=[],
+        key="selector_predeterminados"
+    )
+
+    st.markdown("### 🛠️ Ramos Personalizados Adicionales")
+    num_custom = st.number_input("¿Cuántos ramos adicionales deseas crear desde cero?", min_value=0, max_value=10, value=0, key="num_custom_input")
+
+    # Lista total de ramos a configurar
+    lista_ramos_config = list(ramos_pred_sel) + [f"Asignatura Custom {i+1}" for i in range(int(num_custom))]
     
     estructura_ramos = {}
-    
-    for i in range(int(num_ramos)):
-        st.markdown(f"### 📘 Asignatura {i + 1}")
-        nombre_ramo = st.text_input(f"Nombre del ramo {i + 1}:", value=f"Asignatura {i + 1}", key=f"conf_ramo_{i}")
+
+    for idx_ramo, nombre_default in enumerate(lista_ramos_config):
+        st.markdown(f"---")
+        st.markdown(f"### 📘 Configuración de: **{nombre_default}**")
         
+        nombre_ramo = st.text_input(f"Nombre editable del ramo:", value=nombre_default, key=f"nombre_ramo_edit_{idx_ramo}")
+        
+        # Cargar valores base (si es predeterminado usa la plantilla, si no usa por defecto)
+        plantilla = PLANTILLAS_RAMOS.get(nombre_default, {
+            "Pruebas / Certámenes": {"tiene": True, "cant": 2, "pct": 50},
+            "Controles": {"tiene": True, "cant": 2, "pct": 50},
+            "Laboratorio / Proyecto": {"tiene": False, "cant": 1, "pct": 0},
+            "Tareas": {"tiene": False, "cant": 1, "pct": 0}
+        })
+
         categorias = ["Pruebas / Certámenes", "Controles", "Laboratorio / Proyecto", "Tareas"]
         evaluaciones_ramo = []
-        
         cols = st.columns(4)
         pct_acumulado = 0
-        
-        for idx, cat in enumerate(categorias):
-            with cols[idx]:
+
+        for cat_idx, cat in enumerate(categorias):
+            with cols[cat_idx]:
+                p_info = plantilla.get(cat, {"tiene": False, "cant": 1, "pct": 0})
+                
                 st.markdown(f"**{cat}**")
-                tiene = st.checkbox(f"¿Tiene {cat}?", key=f"conf_check_{cat}_{i}")
+                tiene = st.checkbox(f"¿Tiene {cat}?", value=p_info["tiene"], key=f"chk_{idx_ramo}_{cat}")
+                
                 if tiene:
-                    cant = st.number_input(f"Cantidad de {cat}:", min_value=1, max_value=10, value=2, key=f"conf_cant_{cat}_{i}")
-                    
-                    pct_restante = max(0, 100 - pct_acumulado)
-                    val_defecto = 20 if pct_restante >= 20 else pct_restante
-                    
-                    pct = st.number_input(
-                        f"% Total de {cat}:", 
-                        min_value=0, 
-                        max_value=100, 
-                        value=val_defecto, 
-                        key=f"conf_pct_{cat}_{i}"
-                    )
+                    cant = st.number_input(f"Cantidad:", min_value=1, max_value=10, value=p_info["cant"], key=f"cant_{idx_ramo}_{cat}")
+                    pct = st.number_input(f"% Total:", min_value=0, max_value=100, value=p_info["pct"], key=f"pct_{idx_ramo}_{cat}")
                     
                     pct_acumulado += pct
                     pond_indiv = (pct / 100.0) / cant if cant > 0 else 0.0
@@ -128,19 +161,18 @@ with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expan
                         evaluaciones_ramo.append({
                             "Asignatura": nombre_ramo,
                             "Evaluación": nombre_eval,
-                            "Ponderación (%)": round(pond_indiv * 100, 1),
+                            "Ponderación (%)": round(pond_indiv * 100, 2),
                             "_pond_dec": pond_indiv
                         })
 
         if pct_acumulado == 100:
-            st.success("✅ ¡Perfecto! Los porcentajes de las evaluaciones suman el 100%.")
+            st.success(f"✅ ¡Perfecto! Los porcentajes de **{nombre_ramo}** suman el 100%.")
         elif pct_acumulado < 100:
-            st.warning(f"⚠️ Suma actual: **{pct_acumulado}%**. Falta asignar un **{100 - pct_acumulado}%** para completar el 100% de la asignatura.")
+            st.warning(f"⚠️ Suma actual en **{nombre_ramo}**: **{pct_acumulado}%**. Falta asignar **{100 - pct_acumulado}%**.")
         else:
-            st.error(f"❌ La suma de porcentajes es **{pct_acumulado}%** (Supera el 100% máximo). Por favor ajusta los valores.")
+            st.error(f"❌ La suma en **{nombre_ramo}** es **{pct_acumulado}%** (Supera el 100%). Ajusta los valores.")
 
         estructura_ramos[nombre_ramo] = evaluaciones_ramo
-        st.divider()
 
 # ---------------------------------------------------------
 # 2. PROCESAMIENTO DINÁMICO
@@ -168,7 +200,7 @@ for ramo, evals in estructura_ramos.items():
         })
 
 if not lista_filas:
-    st.info("👈 Selecciona arriba las evaluaciones que tiene cada asignatura.")
+    st.info("👈 Selecciona o configura asignaturas arriba para comenzar a ingresar notas.")
     st.stop()
 
 df_panel = pd.DataFrame(lista_filas)
