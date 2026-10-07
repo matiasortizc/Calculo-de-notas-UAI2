@@ -86,7 +86,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# FUNCIONES AUXILIARES
+# FUNCIONES AUXILIARES Y CALLBACK DE CARGA
 # ---------------------------------------------------------
 def normalizar_nota(valor):
     try:
@@ -104,6 +104,20 @@ def formatear_con_coma(num):
     if isinstance(num, (int, float)):
         return f"{num:.1f}".replace('.', ',')
     return str(num).replace('.', ',')
+
+def procesar_carga_json():
+    uploaded_file = st.session_state.get("file_uploader")
+    if uploaded_file is not None:
+        try:
+            saved_data = json.load(uploaded_file)
+            keys_excluidas = ["menu_lateral_izquierdo", "file_uploader", "last_uploaded_filename"]
+            for k, v in saved_data.items():
+                if k not in keys_excluidas and isinstance(v, (int, float, str, bool, dict, list)):
+                    st.session_state[k] = v
+            st.session_state["last_uploaded_filename"] = uploaded_file.name
+            st.success("✅ ¡Respaldo cargado con éxito!")
+        except Exception as e:
+            st.error(f"Error al leer el archivo JSON: {e}")
 
 PLANTILLAS_RAMOS = {
     "CALCULO INTEGRAL": {
@@ -154,23 +168,16 @@ with st.sidebar:
     
     st.divider()
     st.header("💾 Respaldar y Cargar Notas")
-    uploaded_file = st.file_uploader("Subir respaldo (.json)", type=["json"], key="file_uploader")
     
-    if uploaded_file is not None:
-        if st.session_state.get("last_uploaded_filename") != uploaded_file.name:
-            try:
-                saved_data = json.load(uploaded_file)
-                keys_excluidas = ["menu_lateral_izquierdo", "file_uploader", "last_uploaded_filename"]
-                for k, v in saved_data.items():
-                    if k not in keys_excluidas and isinstance(v, (int, float, str, bool, dict, list)):
-                        st.session_state[k] = v
-                st.session_state["last_uploaded_filename"] = uploaded_file.name
-                st.success("✅ ¡Respaldo cargado con éxito!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Error al leer el archivo JSON: {e}")
+    # File uploader seguro con on_change callback
+    st.file_uploader(
+        "Subir respaldo (.json)", 
+        type=["json"], 
+        key="file_uploader",
+        on_change=procesar_carga_json
+    )
 
-    # Generación segura de datos para respaldo sin alterar estado de widgets
+    # Generación segura de datos para respaldo
     datos_exportar = {
         k: v for k, v in st.session_state.items() 
         if isinstance(v, (int, float, str, bool, dict, list)) and k not in ["file_uploader", "last_uploaded_filename", "menu_lateral_izquierdo"]
