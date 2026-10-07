@@ -105,6 +105,12 @@ PLANTILLAS_RAMOS = {
         "Controles": {"tiene": True, "cant": 3, "pct": 30},
         "Laboratorio / Proyecto": {"tiene": False, "cant": 1, "pct": 0},
         "Tareas": {"tiene": False, "cant": 1, "pct": 0}
+    },
+    "FISICA (CON TAREAS)": {
+        "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 65},
+        "Laboratorio / Proyecto": {"tiene": True, "cant": 3, "pct": 25},
+        "Tareas": {"tiene": True, "cant": 3, "pct": 10},
+        "Controles": {"tiene": False, "cant": 1, "pct": 0}
     }
 }
 
