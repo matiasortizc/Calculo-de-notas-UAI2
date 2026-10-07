@@ -160,9 +160,10 @@ with st.sidebar:
         if st.session_state.get("last_uploaded_filename") != uploaded_file.name:
             try:
                 saved_data = json.load(uploaded_file)
-                # Restauración segura filtrando tipos correctos
+                # Excluimos llaves protegidas de widgets y navegación para evitar conflictos
+                keys_excluidas = ["menu_lateral_izquierdo", "file_uploader", "last_uploaded_filename"]
                 for k, v in saved_data.items():
-                    if isinstance(v, (int, float, str, bool, dict, list)):
+                    if k not in keys_excluidas and isinstance(v, (int, float, str, bool, dict, list)):
                         st.session_state[k] = v
                 st.session_state["last_uploaded_filename"] = uploaded_file.name
                 st.success("✅ ¡Respaldo cargado con éxito!")
@@ -172,7 +173,7 @@ with st.sidebar:
 
     datos_exportar = {
         k: v for k, v in st.session_state.items() 
-        if isinstance(v, (int, float, str, bool, dict, list)) and k not in ["file_uploader", "last_uploaded_filename"]
+        if isinstance(v, (int, float, str, bool, dict, list)) and k not in ["file_uploader", "last_uploaded_filename", "menu_lateral_izquierdo"]
     }
     json_str = json.dumps(datos_exportar, indent=2)
     
