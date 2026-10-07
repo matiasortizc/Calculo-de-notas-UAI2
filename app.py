@@ -160,7 +160,6 @@ with st.sidebar:
         if st.session_state.get("last_uploaded_filename") != uploaded_file.name:
             try:
                 saved_data = json.load(uploaded_file)
-                # Excluimos llaves protegidas de widgets y navegación para evitar conflictos
                 keys_excluidas = ["menu_lateral_izquierdo", "file_uploader", "last_uploaded_filename"]
                 for k, v in saved_data.items():
                     if k not in keys_excluidas and isinstance(v, (int, float, str, bool, dict, list)):
@@ -171,6 +170,7 @@ with st.sidebar:
             except Exception as e:
                 st.error(f"Error al leer el archivo JSON: {e}")
 
+    # Generación segura de datos para respaldo sin alterar estado de widgets
     datos_exportar = {
         k: v for k, v in st.session_state.items() 
         if isinstance(v, (int, float, str, bool, dict, list)) and k not in ["file_uploader", "last_uploaded_filename", "menu_lateral_izquierdo"]
@@ -182,7 +182,7 @@ with st.sidebar:
         data=json_str,
         file_name="mis_notas_uai.json",
         mime="application/json",
-        key="btn_download_json",
+        key="btn_download_json_safe",
         use_container_width=True
     )
 
