@@ -180,11 +180,9 @@ with st.sidebar:
     )
 
 # =========================================================
-# VISTA 1: BIENVENIDA E INICIO (MÁS LLAMATIVA)
+# VISTA 1: BIENVENIDA E INICIO
 # =========================================================
 if seccion == "👋 Bienvenida e Inicio":
-    
-    # Encabezado principal tipo Banner
     st.markdown("""
         <div style="background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%); padding: 2.5rem 2rem; border-radius: 12px; border: 1px solid #4C1D95; text-align: center; margin-bottom: 1.5rem;">
             <h1 style="color: #F8FAFC !important; font-size: 2.2rem !important; margin-bottom: 0.5rem;">🎓 Calculadora de notas - Matías Ortiz - UAI</h1>
@@ -194,7 +192,6 @@ if seccion == "👋 Bienvenida e Inicio":
         </div>
     """, unsafe_allow_html=True)
 
-    # Tarjetas de características / pasos destacados
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -228,8 +225,12 @@ if seccion == "👋 Bienvenida e Inicio":
 # VISTA 2: CONFIGURACIÓN DE ASIGNATURAS
 # =========================================================
 elif seccion == "⚙️ Configuración de Asignaturas":
-    st.title("⚙️ Configuración de Asignaturas")
-    st.caption("Selecciona las asignaturas o agrégalas manualmente verificando que la suma de ponderaciones sea exactamente 100%.")
+    st.markdown("""
+        <div style="background-color: #151C2C; padding: 1.2rem 1.5rem; border-radius: 10px; border: 1px solid #2A354F; margin-bottom: 1.2rem;">
+            <h2 style="color: #A78BFA !important; margin: 0;">⚙️ Configuración de Asignaturas</h2>
+            <p style="color: #94A3B8 !important; margin: 0.3rem 0 0 0; font-size: 0.88rem;">Selecciona los ramos o agrégalos de forma personalizada verificando que sumen el 100%.</p>
+        </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("### 📚 Ramos Predeterminados")
     ramos_pred_sel = st.multiselect(
@@ -275,7 +276,7 @@ elif seccion == "⚙️ Configuración de Asignaturas":
                 tiene = st.checkbox(f"¿Tiene {cat}?", value=p_info["tiene"], key=f"chk_{idx_ramo}_{cat}")
                 
                 if tiene:
-                    cant = st.number_input(f"Cantidad:", min_value=1, max_value=10, value=p_info["cant"], key=f"cant_{idx_ramo}_{cat}")
+                    cant = st.number_input(f"Cantidad:", min_value=1, max_value=30, value=p_info["cant"], key=f"cant_{idx_ramo}_{cat}")
                     pct = st.number_input(f"% Total:", min_value=0, max_value=100, value=p_info["pct"], key=f"pct_{idx_ramo}_{cat}")
                     
                     pct_acumulado += pct
@@ -307,8 +308,12 @@ elif seccion == "⚙️ Configuración de Asignaturas":
 # VISTA 3: METAS OBJETIVOS
 # =========================================================
 elif seccion == "🎯 Metas Objetivos":
-    st.title("🎯 Definir Metas Objetivos")
-    st.caption("Ingresa la calificación final meta para cada asignatura.")
+    st.markdown("""
+        <div style="background-color: #151C2C; padding: 1.2rem 1.5rem; border-radius: 10px; border: 1px solid #2A354F; margin-bottom: 1.2rem;">
+            <h2 style="color: #A78BFA !important; margin: 0;">🎯 Definir Metas Objetivos</h2>
+            <p style="color: #94A3B8 !important; margin: 0.3rem 0 0 0; font-size: 0.88rem;">Establece la calificación final meta que deseas alcanzar para cada asignatura.</p>
+        </div>
+    """, unsafe_allow_html=True)
     
     estructura_ramos = st.session_state.get("estructura_ramos_cache", {})
     if not estructura_ramos:
@@ -337,8 +342,12 @@ elif seccion == "🎯 Metas Objetivos":
 # VISTA 4: PANEL DE NOTAS Y RESULTADOS
 # =========================================================
 elif seccion == "📝 Panel de Notas y Resultados":
-    st.title("📝 Panel de Control de Notas")
-    st.caption("Marca evaluaciones rendidas e ingresa tus calificaciones obtenidas.")
+    st.markdown("""
+        <div style="background-color: #151C2C; padding: 1.2rem 1.5rem; border-radius: 10px; border: 1px solid #2A354F; margin-bottom: 1.2rem;">
+            <h2 style="color: #A78BFA !important; margin: 0;">📝 Panel de Control de Notas y Resultados</h2>
+            <p style="color: #94A3B8 !important; margin: 0.3rem 0 0 0; font-size: 0.88rem;">Registra calificaciones obtenidas y supervisa tus notas requeridas en tiempo real.</p>
+        </div>
+    """, unsafe_allow_html=True)
     
     estructura_ramos = st.session_state.get("estructura_ramos_cache", {})
     
