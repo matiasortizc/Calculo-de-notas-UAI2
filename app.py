@@ -49,7 +49,7 @@ st.title("🎓 Calculadora Dinámica. MATIAS ORTIZ - UAI")
 st.caption("Configura tus asignaturas asegurando que los porcentajes sumen exactamente 100%. Guardado automático disponible vía respaldo.")
 
 # ---------------------------------------------------------
-# FUNCIONES DE FORMATO Y CONVERSIÓN DE NOTAS (Ej: 53 -> 5,3)
+# FUNCIONES DE FORMATO Y CONVERSIÓN DE NOTAS
 # ---------------------------------------------------------
 def normalizar_nota(valor):
     try:
@@ -69,21 +69,24 @@ def formatear_con_coma(num):
     return str(num).replace('.', ',')
 
 # ---------------------------------------------------------
-# SISTEMA DE RESPALDO Y RESTAURACIÓN EN BARRA LATERAL
+# CARGAR RESPALDO SUBIDO (.JSON)
 # ---------------------------------------------------------
 with st.sidebar:
     st.header("💾 Respaldar y Cargar Notas")
-    uploaded_file = st.file_uploader("Subir respaldo previo (.json)", type=["json"])
+    uploaded_file = st.file_uploader("Subir respaldo previo (.json)", type=["json"], key="file_uploader")
     
-    # Restaurar variables en el estado de sesión activo
     if uploaded_file is not None:
-        try:
-            saved_data = json.load(uploaded_file)
-            for k, v in saved_data.items():
-                st.session_state[k] = v
-            st.success("✅ ¡Notas y configuraciones cargadas! Ya puedes modificarlas.")
-        except Exception:
-            st.error("Error al cargar el archivo de respaldo.")
+        # Usamos una clave de control para aplicar la carga solo una vez al subir el archivo
+        if st.session_state.get("last_uploaded_filename") != uploaded_file.name:
+            try:
+                saved_data = json.load(uploaded_file)
+                for k, v in saved_data.items():
+                    st.session_state[k] = v
+                st.session_state["last_uploaded_filename"] = uploaded_file.name
+                st.success("✅ ¡Notas cargadas! Ya puedes editarlas libremente.")
+                st.rerun()
+            except Exception:
+                st.error("Error al cargar el archivo de respaldo.")
     st.divider()
 
 # ---------------------------------------------------------
@@ -196,9 +199,14 @@ for ramo, evals in estructura_ramos.items():
         key_rendida = f"rend_{ramo}_{e['Evaluación']}"
         key_nota = f"nota_{ramo}_{e['Evaluación']}"
         
-        # Obtener valores guardados dinámicamente desde el state
-        rendida = st.session_state.get(key_rendida, False)
-        nota_raw = st.session_state.get(key_nota, "5,0")
+        # Inicialización segura en session_state si no existe
+        if key_rendida not in st.session_state:
+            st.session_state[key_rendida] = False
+        if key_nota not in st.session_state:
+            st.session_state[key_nota] = "5,0"
+        
+        rendida = st.session_state[key_rendida]
+        nota_raw = st.session_state[key_nota]
         nota_limpia = normalizar_nota(nota_raw)
         
         lista_filas.append({
@@ -225,13 +233,16 @@ for ramo in df_panel["Asignatura"].unique():
     mask_ramo = df_panel["Asignatura"] == ramo
     df_ramo = df_panel[mask_ramo]
     
+    key_meta = f"meta_promedio_{ramo}"
+    if key_meta not in st.session_state:
+        st.session_state[key_meta] = 4.0
+
     meta_promedio = st.number_input(
         f"🎯 Meta de promedio deseado para **{ramo}**:",
         min_value=1.0,
         max_value=7.0,
-        value=4.0,
         step=0.1,
-        key=f"meta_promedio_{ramo}"
+        key=key_meta
     )
     dict_metas[ramo] = meta_promedio
 
@@ -250,7 +261,7 @@ for ramo in df_panel["Asignatura"].unique():
         df_panel.loc[mask_ramo & (df_panel["Rendida"] == False), "Nota Obtenida / Requerida"] = promedio_req
 
 # ---------------------------------------------------------
-# 3. PANEL DE CONTROL DE NOTAS (EDITABLE TRAS SUBIR RESPALDO)
+# 3. PANEL DE CONTROL DE NOTAS
 # ---------------------------------------------------------
 st.subheader("📝 Panel de Control de Notas")
 
@@ -275,11 +286,11 @@ for ramo in df_panel["Asignatura"].unique():
         c1.write(row["Evaluación"])
         c2.write(f"{row['Ponderación (%)']}%")
         
-        # Checkbox vinculado a su clave de sesión
+        # Checkbox enlazado directamente a su clave
         es_rendida = c3.checkbox("", key=row["_key_rend"])
         
         if es_rendida:
-            # Input de nota vinculado a su clave de sesión para permitir cambios
+            # Input de nota enlazado directamente a su clave
             val_input = c4.text_input(
                 label=f"Nota para {row['Evaluación']}",
                 key=row["_key_nota"],
@@ -327,15 +338,23 @@ for ramo in df_panel["Asignatura"].unique():
     
     st.divider()
 
-# Botón de descarga en la barra lateral para guardar cambios futuros
+# ---------------------------------------------------------
+# BOTÓN DE DESCARGA EN BARRA LATERAL (SIEMPRE DISPONIBLE)
+# ---------------------------------------------------------
 with st.sidebar:
-    datos_exportar = {k: v for k, v in st.session_state.items() if isinstance(v, (int, float, str, bool))}
+    # Se genera el JSON dinámicamente al momento de construir la barra lateral
+    datos_exportar = {
+        k: v for k, v in st.session_state.items() 
+        if isinstance(v, (int, float, str, bool)) and k not in ["file_uploader", "last_uploaded_filename"]
+    }
     json_str = json.dumps(datos_exportar, indent=2)
+    
     st.download_button(
         label="📥 Descargar Respaldo de Notas",
         data=json_str,
         file_name="mis_notas_uai.json",
-        mime="application/json"
+        mime="application/json",
+        key="btn_download_json"
     )
 
 # ---------------------------------------------------------
