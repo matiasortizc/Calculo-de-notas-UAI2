@@ -29,6 +29,32 @@ st.markdown("""
         color: #F8FAFC !important;
     }
     
+    /* Estilos personalizados para la pantalla de bienvenida llamativa */
+    .hero-container {
+        background: linear-gradient(135deg, #151C2C 0%, #1E1B4B 100%);
+        border: 1px solid #3B82F633;
+        border-radius: 12px;
+        padding: 2.5rem 2rem;
+        text-align: center;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.2);
+    }
+    .hero-title {
+        font-size: 2.5rem !important;
+        font-weight: 800 !important;
+        color: #F8FAFC !important;
+        margin-bottom: 0.5rem;
+    }
+    .hero-title span {
+        color: #A78BFA;
+    }
+    .hero-subtitle {
+        font-size: 1.15rem !important;
+        color: #94A3B8 !important;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    
     div[data-testid="stExpander"], div[data-baseweb="input"], .stTextInput input, .stNumberInput input {
         background-color: #151C2C !important;
         color: #FFFFFF !important;
@@ -141,7 +167,6 @@ with st.sidebar:
     
     st.markdown("### 📍 Navegación de Pasos")
     
-    # Mapeo de nombres para el menú desplegable lateral
     pasos_map = {
         "1. Bienvenida e Inicio": 1,
         "2. Configurar Asignaturas": 2,
@@ -200,16 +225,18 @@ with st.sidebar:
 # PASO 1: PANTALLA DE BIENVENIDA
 # =========================================================
 if st.session_state["paso_actual"] == 1:
-    st.title("👋 Bienvenida e Inicio")
-    st.markdown("### ¡Hola! Bienvenid@ a la Calculadora Dinámica de Notas UAI")
-    st.write("Esta herramienta te permite simular y llevar el control detallado de tus asignaturas, calculando automáticamente la nota requerida en las evaluaciones pendientes para alcanzar tus metas.")
+    st.markdown("""
+        <div class="hero-container">
+            <div class="hero-title">👋 ¡Bienvenido a <span>Calculadora UAI</span>!</div>
+            <div class="hero-subtitle">La herramienta definitiva para simular, planificar y dominar tus calificaciones académicas de forma rápida y sencilla.</div>
+        </div>
+    """, unsafe_allow_html=True)
     
-    st.markdown("---")
     col_a, col_b = st.columns(2)
     
     with col_a:
         st.markdown("#### 🚀 Comenzar desde cero")
-        st.write("Configura tus ramos, pruebas, controles y laboratorios paso a paso.")
+        st.write("Configura tus ramos, pruebas, controles y laboratorios paso a paso de forma personalizada.")
         if st.button("Comenzar Configuración ➔"):
             st.session_state["paso_actual"] = 2
             st.rerun()
