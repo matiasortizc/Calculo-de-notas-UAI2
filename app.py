@@ -5,54 +5,44 @@ import json
 st.set_page_config(page_title="Calculadora de Notas UAI", page_icon="🎓", layout="wide")
 
 # ---------------------------------------------------------
-# ESTILOS CSS - COMPACTO, ULTRA-ESTILIZADO Y DARK SLATE
+# ESTILOS CSS COMPACTOS - PALETA DARK SLATE & VIOLETA NEÓN
 # ---------------------------------------------------------
 st.markdown("""
     <style>
-    /* 1. Fondo principal y texto general */
     .stApp {
         background-color: #0B0F19 !important;
         color: #F8FAFC !important;
-        font-size: 0.88rem !important; /* Fuente general más pequeña */
+        font-size: 0.88rem !important;
     }
     
-    /* 2. Barra lateral (Sidebar) compacta */
     section[data-testid="stSidebar"] {
         background-color: #111827 !important;
         border-right: 1px solid #1F2937 !important;
     }
-    section[data-testid="stSidebar"] .block-container {
-        padding-top: 1.5rem !important;
-    }
     
-    /* 3. Reducción de títulos y encabezados */
     h1 { font-size: 1.6rem !important; margin-bottom: 0.3rem !important; }
     h2 { font-size: 1.3rem !important; margin-bottom: 0.3rem !important; }
     h3 { font-size: 1.05rem !important; margin-bottom: 0.2rem !important; }
     
-    /* 4. Disminución de fuentes en textos, etiquetas y spans */
     .stApp p, .stApp label, .stApp span, div[data-testid="stMarkdownContainer"] p {
         font-size: 0.88rem !important;
         color: #F8FAFC !important;
     }
     
-    /* 5. Insumos y campos de texto ajustados (Padding reducido) */
     div[data-testid="stExpander"], div[data-baseweb="input"], .stTextInput input, .stNumberInput input {
         background-color: #151C2C !important;
         color: #FFFFFF !important;
         border: 1px solid #2A354F !important;
         border-radius: 6px !important;
-        padding: 2px 8px !important; /* Espaciado interno más delgado */
+        padding: 2px 8px !important;
         font-size: 0.85rem !important;
     }
     
-    /* Enfoque visual sutil */
     .stTextInput input:focus, .stNumberInput input:focus {
         border-color: #8B5CF6 !important;
         box-shadow: 0 0 6px rgba(139, 92, 246, 0.3) !important;
     }
     
-    /* 6. Tarjetas Métricas Achicadas (st.metric) */
     div[data-testid="stMetric"] {
         background-color: #151C2C !important;
         border: 1px solid #2A354F !important;
@@ -61,37 +51,22 @@ st.markdown("""
     }
     div[data-testid="stMetricValue"] {
         color: #A78BFA !important;
-        font-size: 1.25rem !important; /* Valor numérico más compacto */
+        font-size: 1.25rem !important;
         font-weight: 700 !important;
     }
-    div[data-testid="stMetricLabel"] {
-        font-size: 0.78rem !important;
-    }
     
-    /* 7. Desplegables (st.expander) con menos relleno */
-    div[data-testid="stExpander"] details summary {
-        padding: 6px 12px !important;
-        font-size: 0.9rem !important;
-    }
-    
-    /* 8. Separadores y márgenes verticales ajustados */
     hr {
         border-color: #1F2937 !important;
         margin: 0.8rem 0 !important;
     }
-    .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 2rem !important;
-    }
     
-    /* 9. Botones achicados */
     div.stButton > button {
         background-color: #7C3AED !important;
         color: #FFFFFF !important;
         border: None !important;
         border-radius: 6px !important;
-        padding: 0.35rem 0.85rem !important;
-        font-size: 0.82rem !important;
+        padding: 0.4rem 1rem !important;
+        font-size: 0.85rem !important;
         font-weight: 600 !important;
         transition: all 0.2s ease !important;
     }
@@ -102,174 +77,270 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🎓 Calculadora Dinámica. MATIAS ORTIZ - UAI")
-st.caption("Configura tus asignaturas asegurando que los porcentajes sumen exactamente 100%. Guardado automático disponible vía respaldo.")
+# ---------------------------------------------------------
+# FUNCIONES AUXILIARES
+# ---------------------------------------------------------
+def normalizar_nota(valor):
+    try:
+        if isinstance(valor, str):
+            valor = valor.replace(',', '.')
+        val = float(valor)
+        if val >= 10.0 and val <= 70.0:
+            val = val / 10.0
+        val = max(1.0, min(7.0, val))
+        return round(val, 2)
+    except:
+        return 1.0
+
+def formatear_con_coma(num):
+    if isinstance(num, (int, float)):
+        return f"{num:.1f}".replace('.', ',')
+    return str(num).replace('.', ',')
+
+# Control de Navegación entre Pasos
+if "paso_actual" not in st.session_state:
+    st.session_state["paso_actual"] = 1
+
+def cambiar_paso(nuevo_paso):
+    st.session_state["paso_actual"] = nuevo_paso
+
+PLANTILLAS_RAMOS = {
+    "CALCULO INTEGRAL": {
+        "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 70},
+        "Controles": {"tiene": True, "cant": 3, "pct": 15},
+        "Laboratorio / Proyecto": {"tiene": True, "cant": 1, "pct": 15},
+        "Tareas": {"tiene": False, "cant": 1, "pct": 0}
+    },
+    "ALGEBRA LINEAL": {
+        "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 70},
+        "Controles": {"tiene": True, "cant": 3, "pct": 15},
+        "Laboratorio / Proyecto": {"tiene": True, "cant": 1, "pct": 15},
+        "Tareas": {"tiene": False, "cant": 1, "pct": 0}
+    },
+    "ALGEBRA": {
+        "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 70},
+        "Controles": {"tiene": True, "cant": 3, "pct": 30},
+        "Laboratorio / Proyecto": {"tiene": False, "cant": 1, "pct": 0},
+        "Tareas": {"tiene": False, "cant": 1, "pct": 0}
+    },
+    "FISICA (CON TAREAS)": {
+        "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 65},
+        "Laboratorio / Proyecto": {"tiene": True, "cant": 3, "pct": 25},
+        "Tareas": {"tiene": True, "cant": 3, "pct": 10},
+        "Controles": {"tiene": False, "cant": 1, "pct": 0}
+    }
+}
 
 # ---------------------------------------------------------
-# MENÚ INICIAL DE BIENVENIDA (INICIA EN BLANCO)
+# BARRA LATERAL (RESPALDO Y NAVEGACIÓN DIRECTA)
 # ---------------------------------------------------------
-st.markdown("<br>", unsafe_allow_html=True)
-st.subheader("👋 ¡Hola! ¿Qué deseas hacer hoy?")
+with st.sidebar:
+    st.title("🎓 Calculadora UAI")
+    st.caption("MATIAS ORTIZ - UAI")
+    st.divider()
+    
+    st.markdown("### 📍 Secciones del Sistema")
+    st.button("1. Bienvenida e Inicio", on_click=cambiar_paso, args=(1,), use_container_width=True)
+    st.button("2. Configurar Asignaturas", on_click=cambiar_paso, args=(2,), use_container_width=True)
+    st.button("3. Definir Metas Objetivos", on_click=cambiar_paso, args=(3,), use_container_width=True)
+    st.button("4. Ingresar Notas y Resultados", on_click=cambiar_paso, args=(4,), use_container_width=True)
+    
+    st.divider()
+    st.header("💾 Respaldar y Cargar Notas")
+    uploaded_file = st.file_uploader("Subir respaldo (.json)", type=["json"], key="file_uploader")
+    
+    if uploaded_file is not None:
+        if st.session_state.get("last_uploaded_filename") != uploaded_file.name:
+            try:
+                saved_data = json.load(uploaded_file)
+                for k, v in saved_data.items():
+                    st.session_state[k] = v
+                st.session_state["last_uploaded_filename"] = uploaded_file.name
+                st.success("✅ ¡Notas cargadas! Redirigiendo a notas...")
+                st.session_state["paso_actual"] = 4
+                st.rerun()
+            except Exception:
+                st.error("Error al cargar el archivo de respaldo.")
 
-opcion_menu = st.radio(
-    "Selecciona una opción para desplegar las herramientas disponibles:",
-    options=["🎓 Calcular mis notas de la universidad"],
-    index=None,
-    key="opcion_menu_principal"
-)
+    datos_exportar = {
+        k: v for k, v in st.session_state.items() 
+        if isinstance(v, (int, float, str, bool)) and k not in ["file_uploader", "last_uploaded_filename", "paso_actual"]
+    }
+    json_str = json.dumps(datos_exportar, indent=2)
+    
+    st.download_button(
+        label="📥 Descargar Respaldo (.json)",
+        data=json_str,
+        file_name="mis_notas_uai.json",
+        mime="application/json",
+        key="btn_download_json",
+        use_container_width=True
+    )
 
-if opcion_menu is None:
-    st.info("👆 Selecciona la opción superior para comenzar a gestionar y calcular tus calificaciones.")
+# =========================================================
+# PASO 1: PANTALLA DE BIENVENIDA
+# =========================================================
+if st.session_state["paso_actual"] == 1:
+    st.title("👋 Bienvenida e Inicio")
+    st.markdown("### ¡Hola! Bienvenid@ a la Calculadora Dinámica de Notas UAI")
+    st.write("Esta herramienta te permite simular y llevar el control detallado de tus asignaturas, calculando automáticamente la nota requerida en las evaluaciones pendientes para alcanzar tus metas.")
+    
+    st.markdown("---")
+    col_a, col_b = st.columns(2)
+    
+    with col_a:
+        st.markdown("#### 🚀 Comenzar desde cero")
+        st.write("Configura tus ramos, pruebas, controles y laboratorios paso a paso.")
+        if st.button("Comenzar Configuración ➔"):
+            st.session_state["paso_actual"] = 2
+            st.rerun()
 
-st.markdown("---")
+    with col_b:
+        st.markdown("#### 📂 Cargar un respaldo existente")
+        st.write("Si ya descargaste previamente tu archivo `.json`, súbelo desde la barra lateral izquierda para cargar tus notas guardadas al instante.")
 
-# ---------------------------------------------------------
-# DESPLIEGUE DE LA CALCULADORA TRAS SELECCIONAR LA OPCIÓN
-# ---------------------------------------------------------
-if opcion_menu == "🎓 Calcular mis notas de la universidad":
+# =========================================================
+# PASO 2: CONFIGURACIÓN DE ASIGNATURAS Y PONDERACIONES
+# =========================================================
+elif st.session_state["paso_actual"] == 2:
+    st.title("📚 Paso 2: Selección y Configuración de Asignaturas")
+    st.caption("Selecciona las asignaturas predefinidas o crea nuevas. Asegúrate de que los porcentajes sumen el 100%.")
+    
+    st.markdown("### 📚 Ramos Predeterminados")
+    ramos_pred_sel = st.multiselect(
+        "Selecciona las asignaturas que cursas actualmente:",
+        options=list(PLANTILLAS_RAMOS.keys()),
+        default=st.session_state.get("selector_predeterminados", []),
+        key="selector_predeterminados"
+    )
 
-    def normalizar_nota(valor):
-        try:
-            if isinstance(valor, str):
-                valor = valor.replace(',', '.')
-            val = float(valor)
-            if val >= 10.0 and val <= 70.0:
-                val = val / 10.0
-            val = max(1.0, min(7.0, val))
-            return round(val, 2)
-        except:
-            return 1.0
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### 🛠️ Ramos Personalizados Adicionales")
+    num_custom = st.number_input("¿Cuántos ramos adicionales deseas crear desde cero?", min_value=0, max_value=10, value=st.session_state.get("num_custom_input", 0), key="num_custom_input")
 
-    def formatear_con_coma(num):
-        if isinstance(num, (int, float)):
-            return f"{num:.1f}".replace('.', ',')
-        return str(num).replace('.', ',')
+    lista_ramos_config = list(ramos_pred_sel) + [f"Asignatura Custom {i+1}" for i in range(int(num_custom))]
+    
+    estructura_ramos = {}
 
-    with st.sidebar:
-        st.header("💾 Respaldar y Cargar Notas")
-        uploaded_file = st.file_uploader("Subir respaldo previo (.json)", type=["json"], key="file_uploader")
+    for idx_ramo, nombre_default in enumerate(lista_ramos_config):
+        st.markdown("---")
+        st.markdown(f"### 📘 Configuración de: **{nombre_default}**")
         
-        if uploaded_file is not None:
-            if st.session_state.get("last_uploaded_filename") != uploaded_file.name:
-                try:
-                    saved_data = json.load(uploaded_file)
-                    for k, v in saved_data.items():
-                        st.session_state[k] = v
-                    st.session_state["last_uploaded_filename"] = uploaded_file.name
-                    st.success("✅ ¡Notas cargadas! Ya puedes editarlas libremente.")
-                    st.rerun()
-                except Exception:
-                    st.error("Error al cargar el archivo de respaldo.")
-        st.divider()
-
-    PLANTILLAS_RAMOS = {
-        "CALCULO INTEGRAL": {
-            "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 70},
-            "Controles": {"tiene": True, "cant": 3, "pct": 15},
-            "Laboratorio / Proyecto": {"tiene": True, "cant": 1, "pct": 15},
-            "Tareas": {"tiene": False, "cant": 1, "pct": 0}
-        },
-        "ALGEBRA LINEAL": {
-            "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 70},
-            "Controles": {"tiene": True, "cant": 3, "pct": 15},
-            "Laboratorio / Proyecto": {"tiene": True, "cant": 1, "pct": 15},
-            "Tareas": {"tiene": False, "cant": 1, "pct": 0}
-        },
-        "ALGEBRA": {
-            "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 70},
-            "Controles": {"tiene": True, "cant": 3, "pct": 30},
+        nombre_ramo = st.text_input(f"Nombre editable del ramo:", value=nombre_default, key=f"nombre_ramo_edit_{idx_ramo}").strip()
+        if not nombre_ramo:
+            nombre_ramo = f"Asignatura {idx_ramo + 1}"
+            
+        plantilla = PLANTILLAS_RAMOS.get(nombre_default, {
+            "Pruebas / Certámenes": {"tiene": True, "cant": 2, "pct": 50},
+            "Controles": {"tiene": True, "cant": 2, "pct": 50},
             "Laboratorio / Proyecto": {"tiene": False, "cant": 1, "pct": 0},
             "Tareas": {"tiene": False, "cant": 1, "pct": 0}
-        },
-        "FISICA (CON TAREAS)": {
-            "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 65},
-            "Laboratorio / Proyecto": {"tiene": True, "cant": 3, "pct": 25},
-            "Tareas": {"tiene": True, "cant": 3, "pct": 10},
-            "Controles": {"tiene": False, "cant": 1, "pct": 0}
-        }
-    }
+        })
 
-    # ---------------------------------------------------------
-    # 1. CONFIGURACIÓN DE RAMOS Y PONDERACIONES (DESPLEGABLE)
-    # ---------------------------------------------------------
-    with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expanded=False):
-        
-        st.markdown("### 📚 Seleccionar Ramos Predeterminados")
-        ramos_pred_sel = st.multiselect(
-            "Selecciona las asignaturas predefinidas que cursas:",
-            options=list(PLANTILLAS_RAMOS.keys()),
-            default=[],
-            key="selector_predeterminados"
-        )
+        categorias = ["Pruebas / Certámenes", "Controles", "Laboratorio / Proyecto", "Tareas"]
+        evaluaciones_ramo = []
+        cols = st.columns(4)
+        pct_acumulado = 0
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 🛠️ Ramos Personalizados Adicionales")
-        num_custom = st.number_input("¿Cuántos ramos adicionales deseas crear desde cero?", min_value=0, max_value=10, value=0, key="num_custom_input")
-
-        lista_ramos_config = list(ramos_pred_sel) + [f"Asignatura Custom {i+1}" for i in range(int(num_custom))]
-        
-        estructura_ramos = {}
-
-        for idx_ramo, nombre_default in enumerate(lista_ramos_config):
-            st.markdown("---")
-            st.markdown(f"### 📘 Configuración de: **{nombre_default}**")
-            
-            nombre_ramo = st.text_input(f"Nombre editable del ramo:", value=nombre_default, key=f"nombre_ramo_edit_{idx_ramo}").strip()
-            
-            if not nombre_ramo:
-                nombre_ramo = f"Asignatura {idx_ramo + 1}"
+        for cat_idx, cat in enumerate(categorias):
+            with cols[cat_idx]:
+                p_info = plantilla.get(cat, {"tiene": False, "cant": 1, "pct": 0})
                 
-            plantilla = PLANTILLAS_RAMOS.get(nombre_default, {
-                "Pruebas / Certámenes": {"tiene": True, "cant": 2, "pct": 50},
-                "Controles": {"tiene": True, "cant": 2, "pct": 50},
-                "Laboratorio / Proyecto": {"tiene": False, "cant": 1, "pct": 0},
-                "Tareas": {"tiene": False, "cant": 1, "pct": 0}
-            })
-
-            categorias = ["Pruebas / Certámenes", "Controles", "Laboratorio / Proyecto", "Tareas"]
-            evaluaciones_ramo = []
-            cols = st.columns(4)
-            pct_acumulado = 0
-
-            for cat_idx, cat in enumerate(categorias):
-                with cols[cat_idx]:
-                    p_info = plantilla.get(cat, {"tiene": False, "cant": 1, "pct": 0})
+                st.markdown(f"**{cat}**")
+                tiene = st.checkbox(f"¿Tiene {cat}?", value=p_info["tiene"], key=f"chk_{idx_ramo}_{cat}")
+                
+                if tiene:
+                    cant = st.number_input(f"Cantidad:", min_value=1, max_value=10, value=p_info["cant"], key=f"cant_{idx_ramo}_{cat}")
+                    pct = st.number_input(f"% Total:", min_value=0, max_value=100, value=p_info["pct"], key=f"pct_{idx_ramo}_{cat}")
                     
-                    st.markdown(f"**{cat}**")
-                    tiene = st.checkbox(f"¿Tiene {cat}?", value=p_info["tiene"], key=f"chk_{idx_ramo}_{cat}")
+                    pct_acumulado += pct
+                    pond_indiv = (pct / 100.0) / cant if cant > 0 else 0.0
                     
-                    if tiene:
-                        cant = st.number_input(f"Cantidad:", min_value=1, max_value=10, value=p_info["cant"], key=f"cant_{idx_ramo}_{cat}")
-                        pct = st.number_input(f"% Total:", min_value=0, max_value=100, value=p_info["pct"], key=f"pct_{idx_ramo}_{cat}")
-                        
-                        pct_acumulado += pct
-                        pond_indiv = (pct / 100.0) / cant if cant > 0 else 0.0
-                        
-                        for j in range(int(cant)):
-                            nombre_eval = f"{cat[:-1] if cat.endswith('s') else cat} {j + 1}"
-                            evaluaciones_ramo.append({
-                                "Asignatura": nombre_ramo,
-                                "Evaluación": nombre_eval,
-                                "Ponderación (%)": round(pond_indiv * 100, 2),
-                                "_pond_dec": pond_indiv
-                            })
+                    for j in range(int(cant)):
+                        nombre_eval = f"{cat[:-1] if cat.endswith('s') else cat} {j + 1}"
+                        evaluaciones_ramo.append({
+                            "Asignatura": nombre_ramo,
+                            "Evaluación": nombre_eval,
+                            "Ponderación (%)": round(pond_indiv * 100, 2),
+                            "_pond_dec": pond_indiv
+                        })
 
-            st.write("")
-            if pct_acumulado == 100:
-                st.success(f"✅ ¡Perfecto! Los porcentajes de **{nombre_ramo}** suman el 100%.")
-            elif pct_acumulado < 100:
-                st.warning(f"⚠️ Suma actual en **{nombre_ramo}**: **{pct_acumulado}%**. Falta asignar **{100 - pct_acumulado}%**.")
+        st.write("")
+        if pct_acumulado == 100:
+            st.success(f"✅ ¡Perfecto! Los porcentajes de **{nombre_ramo}** suman el 100%.")
+        elif pct_acumulado < 100:
+            st.warning(f"⚠️ Suma actual en **{nombre_ramo}**: **{pct_acumulado}%**. Falta asignar **{100 - pct_acumulado}%**.")
+        else:
+            st.error(f"❌ La suma en **{nombre_ramo}** es **{pct_acumulado}%** (Supera el 100%). Ajusta los valores.")
+
+        if evaluaciones_ramo:
+            estructura_ramos[nombre_ramo] = evaluaciones_ramo
+
+    st.session_state["estructura_ramos_cache"] = estructura_ramos
+
+    st.markdown("---")
+    col_n1, col_n2 = st.columns([1, 1])
+    with col_n1:
+        st.button("⬅️ Volver a Bienvenida", on_click=cambiar_paso, args=(1,), use_container_width=True)
+    with col_n2:
+        if st.button("Siguiente: Definir Metas ➔", use_container_width=True):
+            if not estructura_ramos:
+                st.error("Debes seleccionar o configurar al menos un ramo antes de continuar.")
             else:
-                st.error(f"❌ La suma en **{nombre_ramo}** es **{pct_acumulado}%** (Supera el 100%). Ajusta los valores.")
+                st.session_state["paso_actual"] = 3
+                st.rerun()
 
-            if evaluaciones_ramo:
-                estructura_ramos[nombre_ramo] = evaluaciones_ramo
+# =========================================================
+# PASO 3: DEFINICIÓN DE METAS OBJETIVOS
+# =========================================================
+elif st.session_state["paso_actual"] == 3:
+    st.title("🎯 Paso 3: Definir Metas Objetivos")
+    st.caption("Establece la nota final promedio que deseas obtener en cada una de tus asignaturas.")
+    
+    estructura_ramos = st.session_state.get("estructura_ramos_cache", {})
+    if not estructura_ramos:
+        st.warning("No hay ramos configurados. Por favor regresa al Paso 2.")
+        if st.button("⬅️ Ir a Configuración"):
+            st.session_state["paso_actual"] = 2
+            st.rerun()
+        st.stop()
 
-    # ---------------------------------------------------------
-    # 2. PROCESAMIENTO DINÁMICO
-    # ---------------------------------------------------------
+    dict_metas = {}
+    cols_metas = st.columns(min(len(estructura_ramos.keys()), 3))
+    
+    for idx_m, ramo in enumerate(estructura_ramos.keys()):
+        key_meta = f"meta_promedio_{ramo}"
+        if key_meta not in st.session_state:
+            st.session_state[key_meta] = 4.0
+
+        with cols_metas[idx_m % 3]:
+            meta_promedio = st.number_input(
+                f"Meta deseada para **{ramo}**:",
+                min_value=1.0,
+                max_value=7.0,
+                step=0.1,
+                key=key_meta
+            )
+            dict_metas[ramo] = meta_promedio
+
+    st.markdown("---")
+    col_n1, col_n2 = st.columns([1, 1])
+    with col_n1:
+        st.button("⬅️ Volver a Configuración", on_click=cambiar_paso, args=(2,), use_container_width=True)
+    with col_n2:
+        st.button("Siguiente: Ingresar Notas ➔", on_click=cambiar_paso, args=(4,), use_container_width=True)
+
+# =========================================================
+# PASO 4: INGRESO DE NOTAS Y RESULTADOS
+# =========================================================
+elif st.session_state["paso_actual"] == 4:
+    st.title("📝 Paso 4: Ingreso de Notas y Panel de Control")
+    st.caption("Marca las evaluaciones rendidas, ingresa tus notas obtenidas y consulta tus requerimientos académicos.")
+    
+    estructura_ramos = st.session_state.get("estructura_ramos_cache", {})
+    
+    # Procesamiento dinámico de filas
     lista_filas = []
-
     for ramo, evals in estructura_ramos.items():
         for e in evals:
             key_rendida = f"rend_{ramo}_{e['Evaluación']}"
@@ -296,58 +367,35 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
             })
 
     if not lista_filas:
-        st.info("👈 Selecciona o configura asignaturas arriba para comenzar a ingresar notas.")
+        st.info("👈 No hay ramos configurados. Dirígete a la sección de configuración para comenzar.")
+        if st.button("⬅️ Configurar Ramos"):
+            st.session_state["paso_actual"] = 2
+            st.rerun()
         st.stop()
 
     df_panel = pd.DataFrame(lista_filas)
-
-    # ---------------------------------------------------------
-    # METAS POR ASIGNATURA (DESPLEGABLE)
-    # ---------------------------------------------------------
+    
+    # Cálculo de notas requeridas según metas
     dict_metas = {}
-    with st.expander("🎯 Definir Metas Objetivos por Asignatura", expanded=False):
-        cols_metas = st.columns(min(len(df_panel["Asignatura"].unique()), 3))
+    for ramo in df_panel["Asignatura"].unique():
+        key_meta = f"meta_promedio_{ramo}"
+        meta_promedio = st.session_state.get(key_meta, 4.0)
+        dict_metas[ramo] = meta_promedio
+
+        mask_ramo = df_panel["Asignatura"] == ramo
+        df_ramo = df_panel[mask_ramo]
+        df_rendidas = df_ramo[df_ramo["Rendida"] == True]
+        puntos_actuales = (df_rendidas["Nota Obtenida / Requerida"] * df_rendidas["_pond_dec"]).sum()
         
-        for idx_m, ramo in enumerate(df_panel["Asignatura"].unique()):
-            if not ramo or str(ramo).strip() == "":
-                continue
-            mask_ramo = df_panel["Asignatura"] == ramo
-            df_ramo = df_panel[mask_ramo]
-            
-            key_meta = f"meta_promedio_{ramo}"
-            if key_meta not in st.session_state:
-                st.session_state[key_meta] = 4.0
-
-            with cols_metas[idx_m % 3]:
-                meta_promedio = st.number_input(
-                    f"Meta deseada para **{ramo}**:",
-                    min_value=1.0,
-                    max_value=7.0,
-                    step=0.1,
-                    key=key_meta
-                )
-                dict_metas[ramo] = meta_promedio
-
-            df_rendidas = df_ramo[df_ramo["Rendida"] == True]
-            puntos_actuales = (df_rendidas["Nota Obtenida / Requerida"] * df_rendidas["_pond_dec"]).sum()
-            
-            df_pendientes = df_ramo[df_ramo["Rendida"] == False]
-            sum_pond_pendiente = df_pendientes["_pond_dec"].sum()
-            sum_pond_total = df_ramo["_pond_dec"].sum()
-            
-            if sum_pond_pendiente > 0:
-                puntos_necesarios = (meta_promedio * sum_pond_total) - puntos_actuales
-                promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
-                promedio_req = max(1.0, min(7.0, promedio_req))
-                df_panel.loc[mask_ramo & (df_panel["Rendida"] == False), "Nota Obtenida / Requerida"] = promedio_req
-
-    st.markdown("---")
-
-    # ---------------------------------------------------------
-    # 3. PANEL DE CONTROL DE NOTAS (DESPLEGABLE POR ASIGNATURA)
-    # ---------------------------------------------------------
-    st.subheader("📝 Panel de Control de Notas")
-    st.write("")
+        df_pendientes = df_ramo[df_ramo["Rendida"] == False]
+        sum_pond_pendiente = df_pendientes["_pond_dec"].sum()
+        sum_pond_total = df_ramo["_pond_dec"].sum()
+        
+        if sum_pond_pendiente > 0:
+            puntos_necesarios = (meta_promedio * sum_pond_total) - puntos_actuales
+            promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
+            promedio_req = max(1.0, min(7.0, promedio_req))
+            df_panel.loc[mask_ramo & (df_panel["Rendida"] == False), "Nota Obtenida / Requerida"] = promedio_req
 
     df_actualizado = df_panel.copy()
     resumen_resultados = []
@@ -364,7 +412,7 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
         puntos_actuales_pre = (df_ramo_pre["Nota Obtenida / Requerida"] * df_ramo_pre["_pond_dec"]).sum()
         np_actual_pre = round(puntos_actuales_pre / sum_pond_rendida_pre, 2) if sum_pond_rendida_pre > 0 else 0.0
 
-        with st.expander(f"📘 {ramo} (Ponderado: {formatear_con_coma(np_actual_pre)} | Avance: {int(sum_pond_rendida_pre * 100)}%)", expanded=False):
+        with st.expander(f"📘 {ramo} (Ponderado: {formatear_con_coma(np_actual_pre)} | Avance: {int(sum_pond_rendida_pre * 100)}%)", expanded=True):
             
             diferencia_meta = round(np_actual_pre - meta_actual, 2) if sum_pond_rendida_pre > 0 else 0.0
 
@@ -433,13 +481,13 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
                 puntos_necesarios = (meta_actual * sum_pond_total) - puntos_actuales
                 promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
                 if promedio_req > 7.0:
-                    estado_req = f"{formatear_con_coma(promedio_req)} ⚠️ (Imposible llegar al {formatear_con_coma(meta_actual)})"
+                    estado_req = f"{formatear_con_coma(promedio_req)} ⚠️ (Imposible)"
                 elif promedio_req <= 1.0:
-                    estado_req = f"1,0 (¡Ya aseguraste el {formatear_con_coma(meta_actual)}!)"
+                    estado_req = f"1,0 (¡Asegurado!)"
                 else:
                     estado_req = f"{formatear_con_coma(promedio_req)}"
             else:
-                estado_req = "Sin evaluaciones pendientes"
+                estado_req = "Sin pendientes"
                 
             resumen_resultados.append({
                 "Asignatura": ramo,
@@ -450,25 +498,11 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
                 f"Nota promedio requerida en pendientes (para {formatear_con_coma(meta_actual)})": estado_req
             })
 
-    with st.sidebar:
-        datos_exportar = {
-            k: v for k, v in st.session_state.items() 
-            if isinstance(v, (int, float, str, bool)) and k not in ["file_uploader", "last_uploaded_filename"]
-        }
-        json_str = json.dumps(datos_exportar, indent=2)
-        
-        st.download_button(
-            label="📥 Descargar Respaldo de Notas",
-            data=json_str,
-            file_name="mis_notas_uai.json",
-            mime="application/json",
-            key="btn_download_json"
-        )
-
-    # ---------------------------------------------------------
-    # 4. RESUMEN COMPARATIVO FINAL (DESPLEGABLE)
-    # ---------------------------------------------------------
     if resumen_resultados:
         st.markdown("<br>", unsafe_allow_html=True)
         with st.expander("📊 Resumen Comparativo de Asignaturas", expanded=True):
             st.dataframe(pd.DataFrame(resumen_resultados), use_container_width=True)
+
+    st.markdown("---")
+    if st.button("⬅️ Volver a Definición de Metas", on_click=cambiar_paso, args=(3,)):
+        pass
