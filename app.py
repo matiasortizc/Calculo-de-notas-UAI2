@@ -69,17 +69,19 @@ def formatear_con_coma(num):
     return str(num).replace('.', ',')
 
 # ---------------------------------------------------------
-# SISTEMA DE RESPALDO EN BARRA LATERAL
+# SISTEMA DE RESPALDO Y RESTAURACIÓN EN BARRA LATERAL
 # ---------------------------------------------------------
 with st.sidebar:
     st.header("💾 Respaldar y Cargar Notas")
     uploaded_file = st.file_uploader("Subir respaldo previo (.json)", type=["json"])
+    
+    # Restaurar variables en el estado de sesión activo
     if uploaded_file is not None:
         try:
             saved_data = json.load(uploaded_file)
             for k, v in saved_data.items():
                 st.session_state[k] = v
-            st.success("✅ ¡Notas cargadas exitosamente!")
+            st.success("✅ ¡Notas y configuraciones cargadas! Ya puedes modificarlas.")
         except Exception:
             st.error("Error al cargar el archivo de respaldo.")
     st.divider()
@@ -130,7 +132,6 @@ with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expan
     st.markdown("### 🛠️ Ramos Personalizados Adicionales")
     num_custom = st.number_input("¿Cuántos ramos adicionales deseas crear desde cero?", min_value=0, max_value=10, value=0, key="num_custom_input")
 
-    # Lista total de ramos a configurar
     lista_ramos_config = list(ramos_pred_sel) + [f"Asignatura Custom {i+1}" for i in range(int(num_custom))]
     
     estructura_ramos = {}
@@ -141,7 +142,6 @@ with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expan
         
         nombre_ramo = st.text_input(f"Nombre editable del ramo:", value=nombre_default, key=f"nombre_ramo_edit_{idx_ramo}")
         
-        # Cargar valores base (si es predeterminado usa la plantilla, si no usa por defecto)
         plantilla = PLANTILLAS_RAMOS.get(nombre_default, {
             "Pruebas / Certámenes": {"tiene": True, "cant": 2, "pct": 50},
             "Controles": {"tiene": True, "cant": 2, "pct": 50},
@@ -196,6 +196,7 @@ for ramo, evals in estructura_ramos.items():
         key_rendida = f"rend_{ramo}_{e['Evaluación']}"
         key_nota = f"nota_{ramo}_{e['Evaluación']}"
         
+        # Obtener valores guardados dinámicamente desde el state
         rendida = st.session_state.get(key_rendida, False)
         nota_raw = st.session_state.get(key_nota, "5,0")
         nota_limpia = normalizar_nota(nota_raw)
@@ -249,7 +250,7 @@ for ramo in df_panel["Asignatura"].unique():
         df_panel.loc[mask_ramo & (df_panel["Rendida"] == False), "Nota Obtenida / Requerida"] = promedio_req
 
 # ---------------------------------------------------------
-# 3. PANEL DE CONTROL DIVIDIDO
+# 3. PANEL DE CONTROL DE NOTAS (EDITABLE TRAS SUBIR RESPALDO)
 # ---------------------------------------------------------
 st.subheader("📝 Panel de Control de Notas")
 
@@ -274,13 +275,13 @@ for ramo in df_panel["Asignatura"].unique():
         c1.write(row["Evaluación"])
         c2.write(f"{row['Ponderación (%)']}%")
         
-        es_rendida = c3.checkbox("", value=row["Rendida"], key=row["_key_rend"])
+        # Checkbox vinculado a su clave de sesión
+        es_rendida = c3.checkbox("", key=row["_key_rend"])
         
         if es_rendida:
-            valor_defecto = formatear_con_coma(row["Nota Obtenida / Requerida"])
+            # Input de nota vinculado a su clave de sesión para permitir cambios
             val_input = c4.text_input(
                 label=f"Nota para {row['Evaluación']}",
-                value=valor_defecto,
                 key=row["_key_nota"],
                 label_visibility="collapsed"
             )
@@ -326,7 +327,7 @@ for ramo in df_panel["Asignatura"].unique():
     
     st.divider()
 
-# Botón de descarga en la barra lateral
+# Botón de descarga en la barra lateral para guardar cambios futuros
 with st.sidebar:
     datos_exportar = {k: v for k, v in st.session_state.items() if isinstance(v, (int, float, str, bool))}
     json_str = json.dumps(datos_exportar, indent=2)
