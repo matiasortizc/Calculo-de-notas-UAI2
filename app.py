@@ -5,58 +5,78 @@ import json
 st.set_page_config(page_title="Calculadora de Notas UAI", page_icon="🎓", layout="wide")
 
 # ---------------------------------------------------------
-# ESTILOS CSS - TEMA AZUL MUY OSCURO / NIGHT MODE
+# ESTILOS CSS - PALETA MEJORADA: DARK SLATE & CYAN NEÓN
 # ---------------------------------------------------------
 st.markdown("""
     <style>
-    /* Fondo principal Azul Noche muy oscuro */
+    /* Fondo principal Dark Slate ultra profundo */
     .stApp {
-        background-color: #030712 !important;
+        background-color: #090D16 !important;
         color: #F8FAFC !important;
     }
     
-    /* Barra lateral (Sidebar) en Azul Oscuro Profundo */
+    /* Barra lateral (Sidebar) */
     section[data-testid="stSidebar"] {
         background-color: #0F172A !important;
+        border-right: 1px solid #1E293B !important;
     }
     
-    /* Color de texto general e instrucciones */
+    /* Tipografía e Instrucciones */
     .stApp p, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp span {
         color: #F8FAFC !important;
     }
     
-    /* Tarjetas, desplegables y campos de texto */
+    /* Encabezados destacados */
+    h1, h2, h3 {
+        letter-spacing: -0.02em;
+    }
+    
+    /* Contenedores, tarjetas e insumos con más espacio y profundidad */
     div[data-testid="stExpander"], div[data-baseweb="input"], .stTextInput input, .stNumberInput input {
-        background-color: #1E293B !important;
+        background-color: #111827 !important;
         color: #FFFFFF !important;
-        border: 1px solid #334155 !important;
-        border-radius: 8px;
+        border: 1px solid #1E293B !important;
+        border-radius: 10px;
+        padding: 4px;
     }
     
-    /* Borde resaltado al seleccionar entradas */
+    /* Efecto hover y focus neón cian */
     .stTextInput input:focus, .stNumberInput input:focus {
-        border-color: #38BDF8 !important;
+        border-color: #06B6D4 !important;
+        box-shadow: 0 0 8px rgba(6, 182, 212, 0.3) !important;
     }
     
-    /* Contenedores de alertas e información */
-    .stAlert {
-        border-radius: 8px;
+    /* Tarjetas de métricas */
+    div[data-testid="stMetricValue"] {
+        color: #22D3EE !important;
+        font-weight: 700;
     }
     
-    /* Botones de acción principales */
+    /* Espaciado general entre bloques y contenedores */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 3rem !important;
+    }
+    
+    /* Separador visual limpio */
+    hr {
+        border-color: #1E293B !important;
+        margin: 2rem 0 !important;
+    }
+    
+    /* Botones con color de acento Cian */
     div.stButton > button {
-        background-color: #1E3E62 !important;
+        background-color: #0891B2 !important;
         color: #FFFFFF !important;
-        border: 1px solid #38BDF8 !important;
+        border: None !important;
         border-radius: 8px !important;
-        padding: 0.6rem 1.2rem !important;
+        padding: 0.7rem 1.5rem !important;
         font-weight: 600 !important;
-        transition: all 0.3s ease !important;
+        transition: all 0.2s ease !important;
     }
     div.stButton > button:hover {
-        background-color: #38BDF8 !important;
-        color: #030712 !important;
-        border-color: #38BDF8 !important;
+        background-color: #06B6D4 !important;
+        box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4) !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -67,17 +87,16 @@ st.caption("Configura tus asignaturas asegurando que los porcentajes sumen exact
 # ---------------------------------------------------------
 # MENÚ INICIAL DE BIENVENIDA (INICIA EN BLANCO)
 # ---------------------------------------------------------
-st.markdown("---")
+st.markdown("<br>", unsafe_allow_html=True)
 st.subheader("👋 ¡Hola! ¿Qué deseas hacer hoy?")
 
 opcion_menu = st.radio(
     "Selecciona una opción para desplegar las herramientas disponibles:",
     options=["🎓 Calcular mis notas de la universidad"],
-    index=None,  # Inicia en blanco sin opción seleccionada por defecto
+    index=None,
     key="opcion_menu_principal"
 )
 
-# Mensaje guíador si aún no se selecciona nada
 if opcion_menu is None:
     st.info("👆 Selecciona la opción superior para comenzar a gestionar y calcular tus calificaciones.")
 
@@ -88,9 +107,6 @@ st.markdown("---")
 # ---------------------------------------------------------
 if opcion_menu == "🎓 Calcular mis notas de la universidad":
 
-    # ---------------------------------------------------------
-    # FUNCIONES DE FORMATO Y CONVERSIÓN DE NOTAS
-    # ---------------------------------------------------------
     def normalizar_nota(valor):
         try:
             if isinstance(valor, str):
@@ -108,9 +124,6 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
             return f"{num:.1f}".replace('.', ',')
         return str(num).replace('.', ',')
 
-    # ---------------------------------------------------------
-    # CARGAR RESPALDO SUBIDO (.JSON)
-    # ---------------------------------------------------------
     with st.sidebar:
         st.header("💾 Respaldar y Cargar Notas")
         uploaded_file = st.file_uploader("Subir respaldo previo (.json)", type=["json"], key="file_uploader")
@@ -128,9 +141,6 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
                     st.error("Error al cargar el archivo de respaldo.")
         st.divider()
 
-    # ---------------------------------------------------------
-    # DICCIONARIO DE PLANTILLAS DE RAMOS PREDETERMINADOS
-    # ---------------------------------------------------------
     PLANTILLAS_RAMOS = {
         "CALCULO INTEGRAL": {
             "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 70},
@@ -159,7 +169,7 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
     }
 
     # ---------------------------------------------------------
-    # 1. CONFIGURACIÓN DE RAMOS Y EDICIÓN DE VALORES
+    # 1. CONFIGURACIÓN DE RAMOS Y PONDERACIONES
     # ---------------------------------------------------------
     with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expanded=True):
         
@@ -171,6 +181,7 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
             key="selector_predeterminados"
         )
 
+        st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("### 🛠️ Ramos Personalizados Adicionales")
         num_custom = st.number_input("¿Cuántos ramos adicionales deseas crear desde cero?", min_value=0, max_value=10, value=0, key="num_custom_input")
 
@@ -222,6 +233,7 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
                                 "_pond_dec": pond_indiv
                             })
 
+            st.write("")
             if pct_acumulado == 100:
                 st.success(f"✅ ¡Perfecto! Los porcentajes de **{nombre_ramo}** suman el 100%.")
             elif pct_acumulado < 100:
@@ -268,10 +280,14 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
 
     df_panel = pd.DataFrame(lista_filas)
 
-    # Meta de promedio por asignatura
+    # METAS POR ASIGNATURA EN BLOQUE INDEPENDIENTE
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### 🎯 Definir Metas Objetivos por Asignatura")
+    
     dict_metas = {}
-
-    for ramo in df_panel["Asignatura"].unique():
+    cols_metas = st.columns(min(len(df_panel["Asignatura"].unique()), 3))
+    
+    for idx_m, ramo in enumerate(df_panel["Asignatura"].unique()):
         if not ramo or str(ramo).strip() == "":
             continue
         mask_ramo = df_panel["Asignatura"] == ramo
@@ -281,14 +297,15 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
         if key_meta not in st.session_state:
             st.session_state[key_meta] = 4.0
 
-        meta_promedio = st.number_input(
-            f"🎯 Meta de promedio deseado para **{ramo}**:",
-            min_value=1.0,
-            max_value=7.0,
-            step=0.1,
-            key=key_meta
-        )
-        dict_metas[ramo] = meta_promedio
+        with cols_metas[idx_m % 3]:
+            meta_promedio = st.number_input(
+                f"Meta deseada para **{ramo}**:",
+                min_value=1.0,
+                max_value=7.0,
+                step=0.1,
+                key=key_meta
+            )
+            dict_metas[ramo] = meta_promedio
 
         df_rendidas = df_ramo[df_ramo["Rendida"] == True]
         puntos_actuales = (df_rendidas["Nota Obtenida / Requerida"] * df_rendidas["_pond_dec"]).sum()
@@ -301,13 +318,15 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
             puntos_necesarios = (meta_promedio * sum_pond_total) - puntos_actuales
             promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
             promedio_req = max(1.0, min(7.0, promedio_req))
-            
             df_panel.loc[mask_ramo & (df_panel["Rendida"] == False), "Nota Obtenida / Requerida"] = promedio_req
 
+    st.markdown("---")
+
     # ---------------------------------------------------------
-    # 3. PANEL DE CONTROL DE NOTAS (MÉTRICAS + BARRA DE PROGRESO)
+    # 3. PANEL DE CONTROL DE NOTAS (SEPARADO Y ORDENADO)
     # ---------------------------------------------------------
     st.subheader("📝 Panel de Control de Notas")
+    st.write("")
 
     df_actualizado = df_panel.copy()
     resumen_resultados = []
@@ -316,19 +335,17 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
         if not ramo or str(ramo).strip() == "":
             continue
 
-        st.markdown(f"### 📘 Asignatura: {ramo}")
+        st.markdown(f"## 📘 {ramo}")
         
         df_ramo_filas = df_panel[df_panel["Asignatura"] == ramo]
         meta_actual = dict_metas.get(ramo, 4.0)
         
-        # Cálculos previos para métricas e indicador de avance visual
         df_ramo_pre = df_ramo_filas[df_ramo_filas["Rendida"] == True]
         sum_pond_rendida_pre = df_ramo_pre["_pond_dec"].sum()
         puntos_actuales_pre = (df_ramo_pre["Nota Obtenida / Requerida"] * df_ramo_pre["_pond_dec"]).sum()
         np_actual_pre = round(puntos_actuales_pre / sum_pond_rendida_pre, 2) if sum_pond_rendida_pre > 0 else 0.0
         diferencia_meta = round(np_actual_pre - meta_actual, 2) if sum_pond_rendida_pre > 0 else 0.0
 
-        # Tarjetas Métricas Superiores
         col_m1, col_m2, col_m3 = st.columns(3)
         col_m1.metric(
             label="📈 Nota Ponderada Actual", 
@@ -344,11 +361,10 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
             value=f"{int(sum_pond_rendida_pre * 100)}%"
         )
 
-        # Barra de Progreso Visual para el Avance Evaluado
         pct_progreso = min(1.0, float(sum_pond_rendida_pre))
         st.progress(
             pct_progreso, 
-            text=f"Progreso evaluado del ramo: {int(sum_pond_rendida_pre * 100)}% completado ({int((1 - pct_progreso) * 100)}% pendiente)"
+            text=f"Progreso evaluado: {int(sum_pond_rendida_pre * 100)}% completado ({int((1 - pct_progreso) * 100)}% pendiente)"
         )
         st.write("")
 
@@ -412,11 +428,9 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
             f"Nota promedio requerida en pendientes (para {formatear_con_coma(meta_actual)})": estado_req
         })
         
+        st.markdown("<br>", unsafe_allow_html=True)
         st.divider()
 
-    # ---------------------------------------------------------
-    # BOTÓN DE DESCARGA EN BARRA LATERAL
-    # ---------------------------------------------------------
     with st.sidebar:
         datos_exportar = {
             k: v for k, v in st.session_state.items() 
@@ -433,8 +447,10 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
         )
 
     # ---------------------------------------------------------
-    # 4. RESUMEN COMPARATIVO FINAL
+    # 4. RESUMEN COMPARATIVO FINAL (SEPARADO)
     # ---------------------------------------------------------
     if resumen_resultados:
+        st.markdown("<br>", unsafe_allow_html=True)
         st.subheader("📊 Resumen Comparativo de Asignaturas")
+        st.write("")
         st.dataframe(pd.DataFrame(resumen_resultados), use_container_width=True)
