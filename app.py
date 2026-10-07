@@ -157,9 +157,9 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
     }
 
     # ---------------------------------------------------------
-    # 1. CONFIGURACIÓN DE RAMOS Y PONDERACIONES
+    # 1. CONFIGURACIÓN DE RAMOS Y PONDERACIONES (DESPLEGABLE)
     # ---------------------------------------------------------
-    with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expanded=True):
+    with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expanded=False):
         
         st.markdown("### 📚 Seleccionar Ramos Predeterminados")
         ramos_pred_sel = st.multiselect(
@@ -268,50 +268,50 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
 
     df_panel = pd.DataFrame(lista_filas)
 
-    # METAS POR ASIGNATURA
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### 🎯 Definir Metas Objetivos por Asignatura")
-    
+    # ---------------------------------------------------------
+    # METAS POR ASIGNATURA (DESPLEGABLE)
+    # ---------------------------------------------------------
     dict_metas = {}
-    cols_metas = st.columns(min(len(df_panel["Asignatura"].unique()), 3))
-    
-    for idx_m, ramo in enumerate(df_panel["Asignatura"].unique()):
-        if not ramo or str(ramo).strip() == "":
-            continue
-        mask_ramo = df_panel["Asignatura"] == ramo
-        df_ramo = df_panel[mask_ramo]
+    with st.expander("🎯 Definir Metas Objetivos por Asignatura", expanded=False):
+        cols_metas = st.columns(min(len(df_panel["Asignatura"].unique()), 3))
         
-        key_meta = f"meta_promedio_{ramo}"
-        if key_meta not in st.session_state:
-            st.session_state[key_meta] = 4.0
+        for idx_m, ramo in enumerate(df_panel["Asignatura"].unique()):
+            if not ramo or str(ramo).strip() == "":
+                continue
+            mask_ramo = df_panel["Asignatura"] == ramo
+            df_ramo = df_panel[mask_ramo]
+            
+            key_meta = f"meta_promedio_{ramo}"
+            if key_meta not in st.session_state:
+                st.session_state[key_meta] = 4.0
 
-        with cols_metas[idx_m % 3]:
-            meta_promedio = st.number_input(
-                f"Meta deseada para **{ramo}**:",
-                min_value=1.0,
-                max_value=7.0,
-                step=0.1,
-                key=key_meta
-            )
-            dict_metas[ramo] = meta_promedio
+            with cols_metas[idx_m % 3]:
+                meta_promedio = st.number_input(
+                    f"Meta deseada para **{ramo}**:",
+                    min_value=1.0,
+                    max_value=7.0,
+                    step=0.1,
+                    key=key_meta
+                )
+                dict_metas[ramo] = meta_promedio
 
-        df_rendidas = df_ramo[df_ramo["Rendida"] == True]
-        puntos_actuales = (df_rendidas["Nota Obtenida / Requerida"] * df_rendidas["_pond_dec"]).sum()
-        
-        df_pendientes = df_ramo[df_ramo["Rendida"] == False]
-        sum_pond_pendiente = df_pendientes["_pond_dec"].sum()
-        sum_pond_total = df_ramo["_pond_dec"].sum()
-        
-        if sum_pond_pendiente > 0:
-            puntos_necesarios = (meta_promedio * sum_pond_total) - puntos_actuales
-            promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
-            promedio_req = max(1.0, min(7.0, promedio_req))
-            df_panel.loc[mask_ramo & (df_panel["Rendida"] == False), "Nota Obtenida / Requerida"] = promedio_req
+            df_rendidas = df_ramo[df_ramo["Rendida"] == True]
+            puntos_actuales = (df_rendidas["Nota Obtenida / Requerida"] * df_rendidas["_pond_dec"]).sum()
+            
+            df_pendientes = df_ramo[df_ramo["Rendida"] == False]
+            sum_pond_pendiente = df_pendientes["_pond_dec"].sum()
+            sum_pond_total = df_ramo["_pond_dec"].sum()
+            
+            if sum_pond_pendiente > 0:
+                puntos_necesarios = (meta_promedio * sum_pond_total) - puntos_actuales
+                promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
+                promedio_req = max(1.0, min(7.0, promedio_req))
+                df_panel.loc[mask_ramo & (df_panel["Rendida"] == False), "Nota Obtenida / Requerida"] = promedio_req
 
     st.markdown("---")
 
     # ---------------------------------------------------------
-    # 3. PANEL DE CONTROL DE NOTAS (METRICAS Y PROGRESO INTEGRADOC)
+    # 3. PANEL DE CONTROL DE NOTAS (DESPLEGABLE POR ASIGNATURA)
     # ---------------------------------------------------------
     st.subheader("📝 Panel de Control de Notas")
     st.write("")
@@ -323,8 +323,6 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
         if not ramo or str(ramo).strip() == "":
             continue
 
-        st.markdown(f"## 📘 {ramo}")
-        
         df_ramo_filas = df_panel[df_panel["Asignatura"] == ramo]
         meta_actual = dict_metas.get(ramo, 4.0)
         
@@ -332,92 +330,93 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
         sum_pond_rendida_pre = df_ramo_pre["_pond_dec"].sum()
         puntos_actuales_pre = (df_ramo_pre["Nota Obtenida / Requerida"] * df_ramo_pre["_pond_dec"]).sum()
         np_actual_pre = round(puntos_actuales_pre / sum_pond_rendida_pre, 2) if sum_pond_rendida_pre > 0 else 0.0
-        diferencia_meta = round(np_actual_pre - meta_actual, 2) if sum_pond_rendida_pre > 0 else 0.0
 
-        col_m1, col_m2, col_m3 = st.columns(3)
-        col_m1.metric(
-            label="📈 Nota Ponderada Actual", 
-            value=formatear_con_coma(np_actual_pre),
-            delta=f"{formatear_con_coma(diferencia_meta)} vs Meta" if sum_pond_rendida_pre > 0 else None
-        )
-        col_m2.metric(
-            label="🎯 Meta Objetivo", 
-            value=formatear_con_coma(meta_actual)
-        )
-        col_m3.metric(
-            label="📊 Avance Evaluado", 
-            value=f"{int(sum_pond_rendida_pre * 100)}%"
-        )
+        # Expander individual por asignatura
+        with st.expander(f"📘 {ramo} (Ponderado actual: {formatear_con_coma(np_actual_pre)} | Avance: {int(sum_pond_rendida_pre * 100)}%)", expanded=False):
+            
+            diferencia_meta = round(np_actual_pre - meta_actual, 2) if sum_pond_rendida_pre > 0 else 0.0
 
-        pct_progreso = min(1.0, float(sum_pond_rendida_pre))
-        st.progress(
-            pct_progreso, 
-            text=f"Progreso evaluado del ramo: {int(sum_pond_rendida_pre * 100)}% completado ({int((1 - pct_progreso) * 100)}% pendiente)"
-        )
-        st.write("")
+            col_m1, col_m2, col_m3 = st.columns(3)
+            col_m1.metric(
+                label="📈 Nota Ponderada Actual", 
+                value=formatear_con_coma(np_actual_pre),
+                delta=f"{formatear_con_coma(diferencia_meta)} vs Meta" if sum_pond_rendida_pre > 0 else None
+            )
+            col_m2.metric(
+                label="🎯 Meta Objetivo", 
+                value=formatear_con_coma(meta_actual)
+            )
+            col_m3.metric(
+                label="📊 Avance Evaluado", 
+                value=f"{int(sum_pond_rendida_pre * 100)}%"
+            )
 
-        cols_headers = st.columns([2.5, 1.5, 1.5, 2.5])
-        cols_headers[0].markdown("**Evaluación**")
-        cols_headers[1].markdown("**Ponderación**")
-        cols_headers[2].markdown("**¿Rendida?**")
-        cols_headers[3].markdown("**Nota (Obtenida / Requerida)**")
-        
-        for idx, row in df_ramo_filas.iterrows():
-            c1, c2, c3, c4 = st.columns([2.5, 1.5, 1.5, 2.5])
+            pct_progreso = min(1.0, float(sum_pond_rendida_pre))
+            st.progress(
+                pct_progreso, 
+                text=f"Progreso evaluado del ramo: {int(sum_pond_rendida_pre * 100)}% completado ({int((1 - pct_progreso) * 100)}% pendiente)"
+            )
+            st.write("")
+
+            cols_headers = st.columns([2.5, 1.5, 1.5, 2.5])
+            cols_headers[0].markdown("**Evaluación**")
+            cols_headers[1].markdown("**Ponderación**")
+            cols_headers[2].markdown("**¿Rendida?**")
+            cols_headers[3].markdown("**Nota (Obtenida / Requerida)**")
             
-            c1.write(row["Evaluación"])
-            c2.write(f"{row['Ponderación (%)']}%")
-            
-            es_rendida = c3.checkbox("", key=row["_key_rend"])
-            
-            if es_rendida:
-                val_input = c4.text_input(
-                    label=f"Nota para {row['Evaluación']}",
-                    key=row["_key_nota"],
-                    label_visibility="collapsed"
-                )
-                nota_final = normalizar_nota(val_input)
-                df_actualizado.at[idx, "Nota Obtenida / Requerida"] = nota_final
-                df_actualizado.at[idx, "Rendida"] = True
-            else:
-                nota_req_txt = formatear_con_coma(row["Nota Obtenida / Requerida"])
-                c4.info(f"🎯 Requerida: **{nota_req_txt}**")
-                df_actualizado.at[idx, "Rendida"] = False
+            for idx, row in df_ramo_filas.iterrows():
+                c1, c2, c3, c4 = st.columns([2.5, 1.5, 1.5, 2.5])
                 
-        df_ramo_act = df_actualizado[df_actualizado["Asignatura"] == ramo]
-        df_rendidas = df_ramo_act[df_ramo_act["Rendida"] == True]
-        sum_pond_rendida = df_rendidas["_pond_dec"].sum()
-        puntos_actuales = (df_rendidas["Nota Obtenida / Requerida"] * df_rendidas["_pond_dec"]).sum()
-        
-        np_actual = round(puntos_actuales / sum_pond_rendida, 2) if sum_pond_rendida > 0 else 0.0
-        
-        df_pendientes = df_ramo_act[df_ramo_act["Rendida"] == False]
-        sum_pond_pendiente = df_pendientes["_pond_dec"].sum()
-        sum_pond_total = df_ramo_act["_pond_dec"].sum()
-        
-        if sum_pond_pendiente > 0:
-            puntos_necesarios = (meta_actual * sum_pond_total) - puntos_actuales
-            promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
-            if promedio_req > 7.0:
-                estado_req = f"{formatear_con_coma(promedio_req)} ⚠️ (Imposible llegar al {formatear_con_coma(meta_actual)})"
-            elif promedio_req <= 1.0:
-                estado_req = f"1,0 (¡Ya aseguraste el {formatear_con_coma(meta_actual)}!)"
-            else:
-                estado_req = f"{formatear_con_coma(promedio_req)}"
-        else:
-            estado_req = "Sin evaluaciones pendientes"
+                c1.write(row["Evaluación"])
+                c2.write(f"{row['Ponderación (%)']}%")
+                
+                es_rendida = c3.checkbox("", key=row["_key_rend"])
+                
+                if es_rendida:
+                    val_input = c4.text_input(
+                        label=f"Nota para {row['Evaluación']}",
+                        key=row["_key_nota"],
+                        label_visibility="collapsed"
+                    )
+                    nota_final = normalizar_nota(val_input)
+                    df_actualizado.at[idx, "Nota Obtenida / Requerida"] = nota_final
+                    df_actualizado.at[idx, "Rendida"] = True
+                else:
+                    nota_req_txt = formatear_con_coma(row["Nota Obtenida / Requerida"])
+                    c4.info(f"🎯 Requerida: **{nota_req_txt}**")
+                    df_actualizado.at[idx, "Rendida"] = False
+                    
+            df_ramo_act = df_actualizado[df_actualizado["Asignatura"] == ramo]
+            df_rendidas = df_ramo_act[df_ramo_act["Rendida"] == True]
+            sum_pond_rendida = df_rendidas["_pond_dec"].sum()
+            puntos_actuales = (df_rendidas["Nota Obtenida / Requerida"] * df_rendidas["_pond_dec"]).sum()
             
-        resumen_resultados.append({
-            "Asignatura": ramo,
-            "Meta Promedio": formatear_con_coma(meta_actual),
-            "NP Actual (Evaluado)": formatear_con_coma(np_actual),
-            "% Evaluado": f"{int(sum_pond_rendida * 100)}%",
-            "Evaluaciones Pendientes": len(df_pendientes),
-            f"Nota promedio requerida en pendientes (para {formatear_con_coma(meta_actual)})": estado_req
-        })
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.divider()
+            np_actual = round(puntos_actuales / sum_pond_rendida, 2) if sum_pond_rendida > 0 else 0.0
+            
+            df_pendientes = df_ramo_act[df_ramo_act["Rendida"] == False]
+            sum_pond_pendiente = df_pendientes["_pond_dec"].sum()
+            sum_pond_total = df_ramo_act["_pond_dec"].sum()
+            
+            if sum_pond_pendiente > 0:
+                puntos_necesarios = (meta_actual * sum_pond_total) - puntos_actuales
+                promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
+                if promedio_req > 7.0:
+                    estado_req = f"{formatear_con_coma(promedio_req)} ⚠️ (Imposible llegar al {formatear_con_coma(meta_actual)})"
+                elif promedio_req <= 1.0:
+                    estado_req = f"1,0 (¡Ya aseguraste el {formatear_con_coma(meta_actual)}!)"
+                else:
+                    estado_req = f"{formatear_con_coma(promedio_req)}"
+            else:
+                estado_req = "Sin evaluaciones pendientes"
+                
+            resumen_resultados.append({
+                "Asignatura": ramo,
+                "Meta Promedio": formatear_con_coma(meta_actual),
+                "NP Actual (Evaluado)": formatear_con_coma(np_actual),
+                "% Evaluado": f"{int(sum_pond_rendida * 100)}%",
+                "Evaluaciones Pendientes": len(df_pendientes),
+                f"Nota promedio requerida en pendientes (para {formatear_con_coma(meta_actual)})": estado_req
+            })
 
     with st.sidebar:
         datos_exportar = {
@@ -435,10 +434,9 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
         )
 
     # ---------------------------------------------------------
-    # 4. RESUMEN COMPARATIVO FINAL (TABLA ORIGINAL COMPLETA)
+    # 4. RESUMEN COMPARATIVO FINAL (DESPLEGABLE)
     # ---------------------------------------------------------
     if resumen_resultados:
         st.markdown("<br>", unsafe_allow_html=True)
-        st.subheader("📊 Resumen Comparativo de Asignaturas")
-        st.write("")
-        st.dataframe(pd.DataFrame(resumen_resultados), use_container_width=True)
+        with st.expander("📊 Resumen Comparativo de Asignaturas", expanded=True):
+            st.dataframe(pd.DataFrame(resumen_resultados), use_container_width=True)
