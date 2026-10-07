@@ -5,56 +5,56 @@ import json
 st.set_page_config(page_title="Calculadora de Notas UAI", page_icon="🎓", layout="wide")
 
 # ---------------------------------------------------------
-# ESTILOS CSS - PALETA MODO CLARO SOFISTICADO (SOFT LIGHT)
+# ESTILOS CSS - PALETA: DARK SLATE & VIOLETA NEÓN
 # ---------------------------------------------------------
 st.markdown("""
     <style>
-    /* Fondo principal Claro Sofisticado */
+    /* Fondo principal Dark Slate nocturno */
     .stApp {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
+        background-color: #0B0F19 !important;
+        color: #F8FAFC !important;
     }
     
-    /* Barra lateral (Sidebar) en Gris Claro Neutro */
+    /* Barra lateral (Sidebar) */
     section[data-testid="stSidebar"] {
-        background-color: #F8FAFC !important;
-        border-right: 1px solid #E2E8F0 !important;
+        background-color: #111827 !important;
+        border-right: 1px solid #1F2937 !important;
     }
     
     /* Tipografía e Instrucciones */
     .stApp p, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp span {
-        color: #0F172A !important;
+        color: #F8FAFC !important;
     }
     
     /* Tarjetas, desplegables y campos de texto */
     div[data-testid="stExpander"], div[data-baseweb="input"], .stTextInput input, .stNumberInput input {
-        background-color: #F8FAFC !important;
-        color: #0F172A !important;
-        border: 1px solid #CBD5E1 !important;
+        background-color: #151C2C !important;
+        color: #FFFFFF !important;
+        border: 1px solid #2A354F !important;
         border-radius: 8px;
     }
     
-    /* Enfoque visual suave en los inputs */
+    /* Borde en enfoque neón violeta */
     .stTextInput input:focus, .stNumberInput input:focus {
-        border-color: #4F46E5 !important;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
+        border-color: #8B5CF6 !important;
+        box-shadow: 0 0 8px rgba(139, 92, 246, 0.4) !important;
     }
     
-    /* Tarjetas Métricas */
+    /* Tarjetas Métricas con violeta brillante */
     div[data-testid="stMetricValue"] {
-        color: #4F46E5 !important;
+        color: #A78BFA !important;
         font-weight: 700;
     }
     
-    /* Separador visual elegante */
+    /* Separador visual */
     hr {
-        border-color: #E2E8F0 !important;
+        border-color: #1F2937 !important;
         margin: 1.5rem 0 !important;
     }
     
-    /* Botones principales con tono Índigo */
+    /* Botones principales con acento Violeta */
     div.stButton > button {
-        background-color: #4F46E5 !important;
+        background-color: #7C3AED !important;
         color: #FFFFFF !important;
         border: None !important;
         border-radius: 8px !important;
@@ -63,8 +63,8 @@ st.markdown("""
         transition: all 0.2s ease !important;
     }
     div.stButton > button:hover {
-        background-color: #4338CA !important;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2) !important;
+        background-color: #8B5CF6 !important;
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4) !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -311,7 +311,7 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
     st.markdown("---")
 
     # ---------------------------------------------------------
-    # 3. PANEL DE CONTROL DE NOTAS (COMPACTO Y ORDENADO)
+    # 3. PANEL DE CONTROL DE NOTAS (METRICAS Y PROGRESO INTEGRADOC)
     # ---------------------------------------------------------
     st.subheader("📝 Panel de Control de Notas")
     st.write("")
@@ -348,6 +348,13 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
             label="📊 Avance Evaluado", 
             value=f"{int(sum_pond_rendida_pre * 100)}%"
         )
+
+        pct_progreso = min(1.0, float(sum_pond_rendida_pre))
+        st.progress(
+            pct_progreso, 
+            text=f"Progreso evaluado del ramo: {int(sum_pond_rendida_pre * 100)}% completado ({int((1 - pct_progreso) * 100)}% pendiente)"
+        )
+        st.write("")
 
         cols_headers = st.columns([2.5, 1.5, 1.5, 2.5])
         cols_headers[0].markdown("**Evaluación**")
@@ -392,21 +399,21 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
             puntos_necesarios = (meta_actual * sum_pond_total) - puntos_actuales
             promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
             if promedio_req > 7.0:
-                estado_req = f"{formatear_con_coma(promedio_req)} ⚠️ (Imposible)"
+                estado_req = f"{formatear_con_coma(promedio_req)} ⚠️ (Imposible llegar al {formatear_con_coma(meta_actual)})"
             elif promedio_req <= 1.0:
-                estado_req = f"1,0 (¡Asegurado!)"
+                estado_req = f"1,0 (¡Ya aseguraste el {formatear_con_coma(meta_actual)}!)"
             else:
                 estado_req = f"{formatear_con_coma(promedio_req)}"
         else:
-            estado_req = "Sin pendientes"
+            estado_req = "Sin evaluaciones pendientes"
             
         resumen_resultados.append({
             "Asignatura": ramo,
-            "Meta": formatear_con_coma(meta_actual),
-            "NP Actual": formatear_con_coma(np_actual),
-            "Progreso": min(1.0, float(sum_pond_rendida)),
-            "Pendientes": len(df_pendientes),
-            "Nota Req. Pendientes": estado_req
+            "Meta Promedio": formatear_con_coma(meta_actual),
+            "NP Actual (Evaluado)": formatear_con_coma(np_actual),
+            "% Evaluado": f"{int(sum_pond_rendida * 100)}%",
+            "Evaluaciones Pendientes": len(df_pendientes),
+            f"Nota promedio requerida en pendientes (para {formatear_con_coma(meta_actual)})": estado_req
         })
         
         st.markdown("<br>", unsafe_allow_html=True)
@@ -428,31 +435,10 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
         )
 
     # ---------------------------------------------------------
-    # 4. RESUMEN COMPARATIVO FINAL (COMPACTO CON BARRA DE PROGRESO)
+    # 4. RESUMEN COMPARATIVO FINAL (TABLA ORIGINAL COMPLETA)
     # ---------------------------------------------------------
     if resumen_resultados:
         st.markdown("<br>", unsafe_allow_html=True)
         st.subheader("📊 Resumen Comparativo de Asignaturas")
         st.write("")
-        
-        df_resumen = pd.DataFrame(resumen_resultados)
-        
-        # Formato de tabla achicada con barra de progreso visual incorporada en la columna
-        st.dataframe(
-            df_resumen,
-            use_container_width=True,
-            column_config={
-                "Progreso": st.column_config.ProgressColumn(
-                    "Progreso Evaluado",
-                    help="Porcentaje del ramo completado hasta el momento",
-                    format="%.0f%%",
-                    min_value=0,
-                    max_value=1.0,
-                ),
-                "Asignatura": st.column_config.Column("Asignatura", width="medium"),
-                "Meta": st.column_config.Column("Meta", width="small"),
-                "NP Actual": st.column_config.Column("NP Actual", width="small"),
-                "Pendientes": st.column_config.Column("Pendientes", width="small"),
-            },
-            hide_index=True
-        )
+        st.dataframe(pd.DataFrame(resumen_resultados), use_container_width=True)
