@@ -142,8 +142,11 @@ with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expan
         st.markdown("---")
         st.markdown(f"### 📘 Configuración de: **{nombre_default}**")
         
-        nombre_ramo = st.text_input(f"Nombre editable del ramo:", value=nombre_default, key=f"nombre_ramo_edit_{idx_ramo}")
+        nombre_ramo = st.text_input(f"Nombre editable del ramo:", value=nombre_default, key=f"nombre_ramo_edit_{idx_ramo}").strip()
         
+        if not nombre_ramo:
+            nombre_ramo = f"Asignatura {idx_ramo + 1}"
+            
         plantilla = PLANTILLAS_RAMOS.get(nombre_default, {
             "Pruebas / Certámenes": {"tiene": True, "cant": 2, "pct": 50},
             "Controles": {"tiene": True, "cant": 2, "pct": 50},
@@ -186,7 +189,8 @@ with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expan
         else:
             st.error(f"❌ La suma en **{nombre_ramo}** es **{pct_acumulado}%** (Supera el 100%). Ajusta los valores.")
 
-        estructura_ramos[nombre_ramo] = evaluaciones_ramo
+        if evaluaciones_ramo:
+            estructura_ramos[nombre_ramo] = evaluaciones_ramo
 
 # ---------------------------------------------------------
 # 2. PROCESAMIENTO DINÁMICO
@@ -228,6 +232,8 @@ df_panel = pd.DataFrame(lista_filas)
 dict_metas = {}
 
 for ramo in df_panel["Asignatura"].unique():
+    if not ramo or str(ramo).strip() == "":
+        continue
     mask_ramo = df_panel["Asignatura"] == ramo
     df_ramo = df_panel[mask_ramo]
     
@@ -267,6 +273,9 @@ df_actualizado = df_panel.copy()
 resumen_resultados = []
 
 for ramo in df_panel["Asignatura"].unique():
+    if not ramo or str(ramo).strip() == "":
+        continue
+
     st.markdown(f"### 📘 Asignatura: {ramo}")
     
     df_ramo_filas = df_panel[df_panel["Asignatura"] == ramo]
@@ -382,5 +391,6 @@ with st.sidebar:
 # ---------------------------------------------------------
 # 4. RESUMEN COMPARATIVO FINAL
 # ---------------------------------------------------------
-st.subheader("📊 Resumen Comparativo de Asignaturas")
-st.dataframe(pd.DataFrame(resumen_resultados), use_container_width=True)
+if resumen_resultados:
+    st.subheader("📊 Resumen Comparativo de Asignaturas")
+    st.dataframe(pd.DataFrame(resumen_resultados), use_container_width=True)
