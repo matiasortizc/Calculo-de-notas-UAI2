@@ -9,14 +9,14 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# ESTILOS CSS COMPACTOS - PALETA DARK SLATE & VIOLETA NEÓN
+# ESTILOS CSS - PALETA DARK SLATE & VIOLETA NEÓN
 # ---------------------------------------------------------
 st.markdown("""
     <style>
     .stApp {
         background-color: #0B0F19 !important;
         color: #F8FAFC !important;
-        font-size: 0.88rem !important;
+        font-size: 0.92rem !important;
     }
     
     section[data-testid="stSidebar"] {
@@ -26,13 +26,32 @@ st.markdown("""
     
     h1 { font-size: 1.6rem !important; margin-bottom: 0.3rem !important; }
     h2 { font-size: 1.3rem !important; margin-bottom: 0.3rem !important; }
-    h3 { font-size: 1.05rem !important; margin-bottom: 0.2rem !important; }
+    h3 { font-size: 1.1rem !important; margin-bottom: 0.2rem !important; }
     
+    /* Textos generales de la aplicación */
     .stApp p, .stApp label, .stApp span, div[data-testid="stMarkdownContainer"] p {
-        font-size: 0.88rem !important;
+        font-size: 0.92rem !important;
         color: #F8FAFC !important;
     }
     
+    /* Métricas principales con tamaño cómodo y destacado (NO achicadas) */
+    div[data-testid="stMetric"] {
+        background-color: #151C2C !important;
+        border: 1px solid #2A354F !important;
+        border-radius: 8px !important;
+        padding: 12px 16px !important;
+    }
+    div[data-testid="stMetricLabel"] {
+        font-size: 0.95rem !important;
+        color: #94A3B8 !important;
+    }
+    div[data-testid="stMetricValue"] {
+        color: #A78BFA !important;
+        font-size: 1.5rem !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Controles de evaluaciones y tareas (más compactos) */
     div[data-testid="stExpander"], div[data-baseweb="input"], .stTextInput input, .stNumberInput input {
         background-color: #151C2C !important;
         color: #FFFFFF !important;
@@ -47,18 +66,6 @@ st.markdown("""
         box-shadow: 0 0 6px rgba(139, 92, 246, 0.3) !important;
     }
     
-    div[data-testid="stMetric"] {
-        background-color: #151C2C !important;
-        border: 1px solid #2A354F !important;
-        border-radius: 6px !important;
-        padding: 8px 12px !important;
-    }
-    div[data-testid="stMetricValue"] {
-        color: #A78BFA !important;
-        font-size: 1.25rem !important;
-        font-weight: 700 !important;
-    }
-    
     hr {
         border-color: #1F2937 !important;
         margin: 0.8rem 0 !important;
@@ -70,7 +77,7 @@ st.markdown("""
         border: None !important;
         border-radius: 6px !important;
         padding: 0.4rem 1rem !important;
-        font-size: 0.85rem !important;
+        font-size: 0.9rem !important;
         font-weight: 600 !important;
         transition: all 0.2s ease !important;
     }
@@ -198,7 +205,7 @@ if seccion == "👋 Bienvenida e Inicio":
         st.markdown("""
             <div style="background-color: #151C2C; padding: 1.2rem; border-radius: 10px; border: 1px solid #2A354F; height: 100%;">
                 <h3 style="color: #A78BFA !important; margin-top: 0;">📚 1. Configura</h3>
-                <p style="color: #94A3B8 !important; font-size: 0.85rem !important;">Elige tus ramos predeterminados o personaliza tus ponderaciones de forma exacta (100%).</p>
+                <p style="color: #94A3B8 !important; font-size: 0.9rem !important;">Elige tus ramos predeterminados o personaliza tus ponderaciones de forma exacta (100%).</p>
             </div>
         """, unsafe_allow_html=True)
 
@@ -206,7 +213,7 @@ if seccion == "👋 Bienvenida e Inicio":
         st.markdown("""
             <div style="background-color: #151C2C; padding: 1.2rem; border-radius: 10px; border: 1px solid #2A354F; height: 100%;">
                 <h3 style="color: #A78BFA !important; margin-top: 0;">🎯 2. Define Metas</h3>
-                <p style="color: #94A3B8 !important; font-size: 0.85rem !important;">Establece el promedio objetivo que deseas alcanzar al finalizar tu semestre.</p>
+                <p style="color: #94A3B8 !important; font-size: 0.9rem !important;">Establece el promedio objetivo que deseas alcanzar al finalizar tu semestre.</p>
             </div>
         """, unsafe_allow_html=True)
 
@@ -214,12 +221,12 @@ if seccion == "👋 Bienvenida e Inicio":
         st.markdown("""
             <div style="background-color: #151C2C; padding: 1.2rem; border-radius: 10px; border: 1px solid #2A354F; height: 100%;">
                 <h3 style="color: #A78BFA !important; margin-top: 0;">📈 3. Simula Notas</h3>
-                <p style="color: #94A3B8 !important; font-size: 0.85rem !important;">Calcula automáticamente cuánto necesitas en tus evaluaciones pendientes.</p>
+                <p style="color: #94A3B8 !important; font-size: 0.9rem !important;">Calcula automáticamente cuánto necesitas en tus evaluaciones pendientes.</p>
             </div>
         """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.info("💡 **Tip:** Dirígete al menú lateral izquierdo y haz clic en **⚙️ Configuración de Asignaturas** para empezar a armar tu semestre al tiro.")
+    st.info("💡 **Tip:** Dirígete al menú lateral izquierdo y haz clic en **⚙️ Configuración de Asignaturas** para empezar a armar tu semestre.")
 
 # =========================================================
 # VISTA 2: CONFIGURACIÓN DE ASIGNATURAS
@@ -228,7 +235,7 @@ elif seccion == "⚙️ Configuración de Asignaturas":
     st.markdown("""
         <div style="background-color: #151C2C; padding: 1.2rem 1.5rem; border-radius: 10px; border: 1px solid #2A354F; margin-bottom: 1.2rem;">
             <h2 style="color: #A78BFA !important; margin: 0;">⚙️ Configuración de Asignaturas</h2>
-            <p style="color: #94A3B8 !important; margin: 0.3rem 0 0 0; font-size: 0.88rem;">Selecciona los ramos o agrégalos de forma personalizada verificando que sumen el 100%.</p>
+            <p style="color: #94A3B8 !important; margin: 0.3rem 0 0 0; font-size: 0.92rem;">Selecciona los ramos o agrégalos de forma personalizada verificando que sumen el 100%.</p>
         </div>
     """, unsafe_allow_html=True)
     
@@ -311,7 +318,7 @@ elif seccion == "🎯 Metas Objetivos":
     st.markdown("""
         <div style="background-color: #151C2C; padding: 1.2rem 1.5rem; border-radius: 10px; border: 1px solid #2A354F; margin-bottom: 1.2rem;">
             <h2 style="color: #A78BFA !important; margin: 0;">🎯 Definir Metas Objetivos</h2>
-            <p style="color: #94A3B8 !important; margin: 0.3rem 0 0 0; font-size: 0.88rem;">Establece la calificación final meta que deseas alcanzar para cada asignatura.</p>
+            <p style="color: #94A3B8 !important; margin: 0.3rem 0 0 0; font-size: 0.92rem;">Establece la calificación final meta que deseas alcanzar para cada asignatura.</p>
         </div>
     """, unsafe_allow_html=True)
     
@@ -345,7 +352,7 @@ elif seccion == "📝 Panel de Notas y Resultados":
     st.markdown("""
         <div style="background-color: #151C2C; padding: 1.2rem 1.5rem; border-radius: 10px; border: 1px solid #2A354F; margin-bottom: 1.2rem;">
             <h2 style="color: #A78BFA !important; margin: 0;">📝 Panel de Control de Notas y Resultados</h2>
-            <p style="color: #94A3B8 !important; margin: 0.3rem 0 0 0; font-size: 0.88rem;">Registra calificaciones obtenidas y supervisa tus notas requeridas en tiempo real.</p>
+            <p style="color: #94A3B8 !important; margin: 0.3rem 0 0 0; font-size: 0.92rem;">Registra calificaciones obtenidas y supervisa tus notas requeridas en tiempo real.</p>
         </div>
     """, unsafe_allow_html=True)
     
@@ -423,6 +430,7 @@ elif seccion == "📝 Panel de Notas y Resultados":
             
             diferencia_meta = round(np_actual_pre - meta_actual, 2) if sum_pond_rendida_pre > 0 else 0.0
 
+            # Métricas principales con tamaño cómodo y destacado
             col_m1, col_m2, col_m3 = st.columns(3)
             col_m1.metric(
                 label="📈 Nota Ponderada Actual", 
@@ -445,6 +453,7 @@ elif seccion == "📝 Panel de Notas y Resultados":
             )
             st.write("")
 
+            # Cabeceras compactas solo para las pruebas/tareas
             cols_headers = st.columns([2.5, 1.5, 1.5, 2.5])
             cols_headers[0].markdown("**Evaluación**")
             cols_headers[1].markdown("**Ponderación**")
