@@ -2,7 +2,11 @@ import streamlit as st
 import pandas as pd
 import json
 
-st.set_page_config(page_title="Calculadora de notas - Matías Ortiz - UAI", page_icon="🎓", layout="wide")
+st.set_page_config(
+    page_title="Calculadora de notas - Matías Ortiz - UAI", 
+    page_icon="🎓", 
+    layout="wide"
+)
 
 # ---------------------------------------------------------
 # ESTILOS CSS COMPACTOS - PALETA DARK SLATE & VIOLETA NEÓN
@@ -27,32 +31,6 @@ st.markdown("""
     .stApp p, .stApp label, .stApp span, div[data-testid="stMarkdownContainer"] p {
         font-size: 0.88rem !important;
         color: #F8FAFC !important;
-    }
-    
-    /* Estilos personalizados para la pantalla de bienvenida llamativa */
-    .hero-container {
-        background: linear-gradient(135deg, #151C2C 0%, #1E1B4B 100%);
-        border: 1px solid #3B82F633;
-        border-radius: 12px;
-        padding: 2.5rem 2rem;
-        text-align: center;
-        margin-bottom: 2rem;
-        box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.2);
-    }
-    .hero-title {
-        font-size: 2.5rem !important;
-        font-weight: 800 !important;
-        color: #F8FAFC !important;
-        margin-bottom: 0.5rem;
-    }
-    .hero-title span {
-        color: #A78BFA;
-    }
-    .hero-subtitle {
-        font-size: 1.15rem !important;
-        color: #94A3B8 !important;
-        max-width: 700px;
-        margin: 0 auto;
     }
     
     div[data-testid="stExpander"], div[data-baseweb="input"], .stTextInput input, .stNumberInput input {
@@ -123,14 +101,6 @@ def formatear_con_coma(num):
         return f"{num:.1f}".replace('.', ',')
     return str(num).replace('.', ',')
 
-# Control de Navegación entre Pasos
-if "paso_actual" not in st.session_state:
-    st.session_state["paso_actual"] = 1
-
-def cambiar_paso(nuevo_paso):
-    st.session_state["paso_actual"] = nuevo_paso
-    st.rerun()
-
 PLANTILLAS_RAMOS = {
     "CALCULO INTEGRAL": {
         "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 70},
@@ -159,37 +129,26 @@ PLANTILLAS_RAMOS = {
 }
 
 # ---------------------------------------------------------
-# BARRA LATERAL (NAVEGACIÓN DIRECTA Y RESPALDO)
+# BARRA LATERAL IZQUIERDA - NAVEGACIÓN Y CARGA DE RESPALDO
 # ---------------------------------------------------------
 with st.sidebar:
-    st.title("🎓 Calculadora UAI")
-    st.caption("MATIAS ORTIZ - UAI")
+    st.title("🎓 Calculadora de notas")
+    st.caption("Matías Ortiz - UAI")
     st.divider()
     
-    st.markdown("### 📍 Navegación de Pasos")
-    
-    pasos_map = {
-        "1. Bienvenida e Inicio": 1,
-        "2. Configurar Asignaturas": 2,
-        "3. Definir Metas Objetivos": 3,
-        "4. Ingresar Notas y Resultados": 4
-    }
-    
-    paso_inverso = {v: k for k, v in pasos_map.items()}
-    nombre_paso_actual = paso_inverso.get(st.session_state["paso_actual"], "1. Bienvenida e Inicio")
-    
-    seleccion_sidebar = st.selectbox(
-        "Ir directamente a:",
-        options=list(pasos_map.keys()),
-        index=list(pasos_map.keys()).index(nombre_paso_actual),
-        key="select_navegacion_lateral"
+    # Menú directo a la izquierda
+    seccion = st.radio(
+        "📍 Selecciona una sección:",
+        options=[
+            "👋 Bienvenida e Inicio",
+            "⚙️ Configuración de Asignaturas",
+            "🎯 Metas Objetivos",
+            "📝 Panel de Notas y Resultados"
+        ],
+        index=0,
+        key="menu_lateral_izquierdo"
     )
     
-    nuevo_paso_elegido = pasos_map[seleccion_sidebar]
-    if nuevo_paso_elegido != st.session_state["paso_actual"]:
-        st.session_state["paso_actual"] = nuevo_paso_elegido
-        st.rerun()
-
     st.divider()
     st.header("💾 Respaldar y Cargar Notas")
     uploaded_file = st.file_uploader("Subir respaldo (.json)", type=["json"], key="file_uploader")
@@ -201,15 +160,14 @@ with st.sidebar:
                 for k, v in saved_data.items():
                     st.session_state[k] = v
                 st.session_state["last_uploaded_filename"] = uploaded_file.name
-                st.success("✅ ¡Notas cargadas! Redirigiendo a notas...")
-                st.session_state["paso_actual"] = 4
+                st.success("✅ ¡Notas cargadas!")
                 st.rerun()
             except Exception:
                 st.error("Error al cargar el archivo de respaldo.")
 
     datos_exportar = {
         k: v for k, v in st.session_state.items() 
-        if isinstance(v, (int, float, str, bool)) and k not in ["file_uploader", "last_uploaded_filename", "paso_actual", "select_navegacion_lateral"]
+        if isinstance(v, (int, float, str, bool)) and k not in ["file_uploader", "last_uploaded_filename"]
     }
     json_str = json.dumps(datos_exportar, indent=2)
     
@@ -223,34 +181,20 @@ with st.sidebar:
     )
 
 # =========================================================
-# PASO 1: PANTALLA DE BIENVENIDA
+# VISTA 1: BIENVENIDA E INICIO
 # =========================================================
-if st.session_state["paso_actual"] == 1:
-    st.markdown("""
-        <div class="hero-container">
-            <div class="hero-title">👋 ¡Bienvenido a <span>Calculadora UAI</span>!</div>
-            <div class="hero-subtitle">La herramienta definitiva para simular, planificar y dominar tus calificaciones académicas de forma rápida y sencilla.</div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    col_a, col_b = st.columns(2)
-    
-    with col_a:
-        st.markdown("#### 🚀 Comenzar desde cero")
-        st.write("Configura tus ramos, pruebas, controles y laboratorios paso a paso de forma personalizada.")
-        if st.button("Comenzar Configuración ➔"):
-            cambiar_paso(2)
-
-    with col_b:
-        st.markdown("#### 📂 Cargar un respaldo existente")
-        st.write("Si ya descargaste previamente tu archivo `.json`, súbelo desde la barra lateral izquierda para cargar tus notas guardadas al instante.")
+if seccion == "👋 Bienvenida e Inicio":
+    st.title("Calculadora de notas - Matías Ortiz - UAI")
+    st.markdown("### 👋 Bienvenid@ a la plataforma de simulación académica")
+    st.write("Esta herramienta está diseñada para gestionar tus calificaciones de la **Universidad Adolfo Ibáñez**, permitiéndote simular notas y calcular promedios requeridos.")
+    st.info("👈 Utiliza el menú lateral de la izquierda para ingresar al tiro a la sección que desees consultar o editar.")
 
 # =========================================================
-# PASO 2: CONFIGURACIÓN DE ASIGNATURAS Y PONDERACIONES
+# VISTA 2: CONFIGURACIÓN DE ASIGNATURAS
 # =========================================================
-elif st.session_state["paso_actual"] == 2:
-    st.title("📚 Paso 2: Selección y Configuración de Asignaturas")
-    st.caption("Selecciona las asignaturas predefinidas o crea nuevas. Asegúrate de que los porcentajes sumen el 100%.")
+elif seccion == "⚙️ Configuración de Asignaturas":
+    st.title("⚙️ Configuración de Asignaturas")
+    st.caption("Selecciona las asignaturas o agrégalas manualmente verificando que la suma de ponderaciones sea exactamente 100%.")
     
     st.markdown("### 📚 Ramos Predeterminados")
     ramos_pred_sel = st.multiselect(
@@ -324,30 +268,16 @@ elif st.session_state["paso_actual"] == 2:
 
     st.session_state["estructura_ramos_cache"] = estructura_ramos
 
-    st.markdown("---")
-    col_n1, col_n2 = st.columns([1, 1])
-    with col_n1:
-        if st.button("⬅️ Volver a Bienvenida", use_container_width=True):
-            cambiar_paso(1)
-    with col_n2:
-        if st.button("Siguiente: Definir Metas ➔", use_container_width=True):
-            if not estructura_ramos:
-                st.error("Debes seleccionar o configurar al menos un ramo antes de continuar.")
-            else:
-                cambiar_paso(3)
-
 # =========================================================
-# PASO 3: DEFINICIÓN DE METAS OBJETIVOS
+# VISTA 3: METAS OBJETIVOS
 # =========================================================
-elif st.session_state["paso_actual"] == 3:
-    st.title("🎯 Paso 3: Definir Metas Objetivos")
-    st.caption("Establece la nota final promedio que deseas obtener en cada una de todas tus asignaturas.")
+elif seccion == "🎯 Metas Objetivos":
+    st.title("🎯 Definir Metas Objetivos")
+    st.caption("Ingresa la calificación final meta para cada asignatura.")
     
     estructura_ramos = st.session_state.get("estructura_ramos_cache", {})
     if not estructura_ramos:
-        st.warning("No hay ramos configurados. Por favor regresa al Paso 2.")
-        if st.button("⬅️ Ir a Configuración"):
-            cambiar_paso(2)
+        st.info("👈 No hay asignaturas configuradas. Selecciona '⚙️ Configuración de Asignaturas' en el menú izquierdo.")
         st.stop()
 
     dict_metas = {}
@@ -368,21 +298,12 @@ elif st.session_state["paso_actual"] == 3:
             )
             dict_metas[ramo] = meta_promedio
 
-    st.markdown("---")
-    col_n1, col_n2 = st.columns([1, 1])
-    with col_n1:
-        if st.button("⬅️ Volver a Configuración", use_container_width=True):
-            cambiar_paso(2)
-    with col_n2:
-        if st.button("Siguiente: Ingresar Notas ➔", use_container_width=True):
-            cambiar_paso(4)
-
 # =========================================================
-# PASO 4: INGRESO DE NOTAS Y RESULTADOS
+# VISTA 4: PANEL DE NOTAS Y RESULTADOS
 # =========================================================
-elif st.session_state["paso_actual"] == 4:
-    st.title("📝 Paso 4: Ingreso de Notas y Panel de Control")
-    st.caption("Marca las evaluaciones rendidas, ingresa tus notas obtenidas y consulta tus requerimientos académicos.")
+elif seccion == "📝 Panel de Notas y Resultados":
+    st.title("📝 Panel de Control de Notas")
+    st.caption("Marca evaluaciones rendidas e ingresa tus calificaciones obtenidas.")
     
     estructura_ramos = st.session_state.get("estructura_ramos_cache", {})
     
@@ -413,9 +334,7 @@ elif st.session_state["paso_actual"] == 4:
             })
 
     if not lista_filas:
-        st.info("👈 No hay ramos configurados. Dirígete a la sección de configuración para comenzar.")
-        if st.button("⬅️ Configurar Ramos"):
-            cambiar_paso(2)
+        st.info("👈 No hay asignaturas configuradas. Dirígete a '⚙️ Configuración de Asignaturas' en la barra izquierda.")
         st.stop()
 
     df_panel = pd.DataFrame(lista_filas)
@@ -546,7 +465,3 @@ elif st.session_state["paso_actual"] == 4:
         st.markdown("<br>", unsafe_allow_html=True)
         with st.expander("📊 Resumen Comparativo de Asignaturas", expanded=True):
             st.dataframe(pd.DataFrame(resumen_resultados), use_container_width=True)
-
-    st.markdown("---")
-    if st.button("⬅️ Volver a Definición de Metas", use_container_width=True):
-        cambiar_paso(3)
