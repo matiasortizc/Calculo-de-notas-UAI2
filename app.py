@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import json
+import base64
 
 st.set_page_config(
     page_title="Calculadora de notas - Matías Ortiz - UAI", 
@@ -169,7 +170,6 @@ with st.sidebar:
     st.divider()
     st.header("💾 Respaldar y Cargar Notas")
     
-    # File uploader seguro con on_change callback
     st.file_uploader(
         "Subir respaldo (.json)", 
         type=["json"], 
@@ -177,21 +177,31 @@ with st.sidebar:
         on_change=procesar_carga_json
     )
 
-    # Generación segura de datos para respaldo
+    # Generación segura del respaldo mediante enlace HTML base64 (evita conflictos de session_state)
     datos_exportar = {
         k: v for k, v in st.session_state.items() 
         if isinstance(v, (int, float, str, bool, dict, list)) and k not in ["file_uploader", "last_uploaded_filename", "menu_lateral_izquierdo"]
     }
     json_str = json.dumps(datos_exportar, indent=2)
+    b64 = base64.b64encode(json_str.encode()).decode()
     
-    st.download_button(
-        label="📥 Descargar Respaldo (.json)",
-        data=json_str,
-        file_name="mis_notas_uai.json",
-        mime="application/json",
-        key="btn_download_json_safe",
-        use_container_width=True
-    )
+    href = f'''
+        <a href="data:file/json;base64,{b64}" download="mis_notas_uai.json" style="
+            display: block;
+            width: 100%;
+            background-color: #7C3AED;
+            color: #FFFFFF;
+            text-align: center;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            margin-top: 0.5rem;
+        ">📥 Descargar Respaldo (.json)</a>
+    '''
+    st.markdown(href, unsafe_allow_html=True)
 
 # =========================================================
 # VISTA 1: BIENVENIDA E INICIO
