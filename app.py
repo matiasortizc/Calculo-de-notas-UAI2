@@ -5,27 +5,27 @@ import json
 st.set_page_config(page_title="Calculadora de Notas UAI", page_icon="🎓", layout="wide")
 
 # ---------------------------------------------------------
-# ESTILOS CSS - TEMA AZUL OSCURO (DARK BLUE)
+# ESTILOS CSS - TEMA AZUL MUY OSCURO / NIGHT MODE
 # ---------------------------------------------------------
 st.markdown("""
     <style>
-    /* Fondo principal Azul Oscuro */
+    /* Fondo principal Azul Noche muy oscuro */
     .stApp {
-        background-color: #0B192C !important;
-        color: #F1F5F9 !important;
+        background-color: #030712 !important;
+        color: #F8FAFC !important;
     }
     
-    /* Barra lateral (Sidebar) en Azul marino profundo */
+    /* Barra lateral (Sidebar) en Azul Oscuro Profundo */
     section[data-testid="stSidebar"] {
-        background-color: #1E3E62 !important;
+        background-color: #0F172A !important;
     }
     
-    /* Modificar color del texto general e instrucciones */
+    /* Color de texto general e instrucciones */
     .stApp p, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp span {
-        color: #F1F5F9 !important;
+        color: #F8FAFC !important;
     }
     
-    /* Tarjetas, desplegables y entradas en azul intermedio con texto blanco */
+    /* Tarjetas, desplegables y campos de texto */
     div[data-testid="stExpander"], div[data-baseweb="input"], .stTextInput input, .stNumberInput input {
         background-color: #1E293B !important;
         color: #FFFFFF !important;
@@ -33,12 +33,12 @@ st.markdown("""
         border-radius: 8px;
     }
     
-    /* Ajuste para inputs de texto activos */
+    /* Borde resaltado al seleccionar entradas */
     .stTextInput input:focus, .stNumberInput input:focus {
         border-color: #38BDF8 !important;
     }
     
-    /* Contenedores de información */
+    /* Contenedores de alertas e información */
     .stAlert {
         border-radius: 8px;
     }
@@ -99,6 +99,12 @@ PLANTILLAS_RAMOS = {
         "Controles": {"tiene": True, "cant": 3, "pct": 15},
         "Laboratorio / Proyecto": {"tiene": True, "cant": 1, "pct": 15},
         "Tareas": {"tiene": False, "cant": 1, "pct": 0}
+    },
+    "ALGEBRA": {
+        "Pruebas / Certámenes": {"tiene": True, "cant": 3, "pct": 70},
+        "Controles": {"tiene": True, "cant": 3, "pct": 30},
+        "Laboratorio / Proyecto": {"tiene": False, "cant": 1, "pct": 0},
+        "Tareas": {"tiene": False, "cant": 1, "pct": 0}
     }
 }
 
@@ -124,7 +130,7 @@ with st.expander("⚙️ Configuración Inicial de Ramos y Ponderaciones", expan
     estructura_ramos = {}
 
     for idx_ramo, nombre_default in enumerate(lista_ramos_config):
-        st.markdown(f"---")
+        st.markdown("---")
         st.markdown(f"### 📘 Configuración de: **{nombre_default}**")
         
         nombre_ramo = st.text_input(f"Nombre editable del ramo:", value=nombre_default, key=f"nombre_ramo_edit_{idx_ramo}")
@@ -205,10 +211,23 @@ if not lista_filas:
 
 df_panel = pd.DataFrame(lista_filas)
 
+# Meta de promedio por asignatura
+dict_metas = {}
+
 for ramo in df_panel["Asignatura"].unique():
     mask_ramo = df_panel["Asignatura"] == ramo
     df_ramo = df_panel[mask_ramo]
     
+    meta_promedio = st.number_input(
+        f"🎯 Meta de promedio deseado para **{ramo}**:",
+        min_value=1.0,
+        max_value=7.0,
+        value=4.0,
+        step=0.1,
+        key=f"meta_promedio_{ramo}"
+    )
+    dict_metas[ramo] = meta_promedio
+
     df_rendidas = df_ramo[df_ramo["Rendida"] == True]
     puntos_actuales = (df_rendidas["Nota Obtenida / Requerida"] * df_rendidas["_pond_dec"]).sum()
     
@@ -217,7 +236,7 @@ for ramo in df_panel["Asignatura"].unique():
     sum_pond_total = df_ramo["_pond_dec"].sum()
     
     if sum_pond_pendiente > 0:
-        puntos_necesarios = (4.0 * sum_pond_total) - puntos_actuales
+        puntos_necesarios = (meta_promedio * sum_pond_total) - puntos_actuales
         promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
         promedio_req = max(1.0, min(7.0, promedio_req))
         
@@ -235,6 +254,7 @@ for ramo in df_panel["Asignatura"].unique():
     st.markdown(f"### 📘 Asignatura: {ramo}")
     
     df_ramo_filas = df_panel[df_panel["Asignatura"] == ramo]
+    meta_actual = dict_metas.get(ramo, 4.0)
     
     cols_headers = st.columns([2.5, 1.5, 1.5, 2.5])
     cols_headers[0].markdown("**Evaluación**")
@@ -278,12 +298,12 @@ for ramo in df_panel["Asignatura"].unique():
     sum_pond_total = df_ramo_act["_pond_dec"].sum()
     
     if sum_pond_pendiente > 0:
-        puntos_necesarios = (4.0 * sum_pond_total) - puntos_actuales
+        puntos_necesarios = (meta_actual * sum_pond_total) - puntos_actuales
         promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
         if promedio_req > 7.0:
-            estado_req = f"{formatear_con_coma(promedio_req)} ⚠️ (Imposible llegar al 4.0)"
+            estado_req = f"{formatear_con_coma(promedio_req)} ⚠️ (Imposible llegar al {formatear_con_coma(meta_actual)})"
         elif promedio_req <= 1.0:
-            estado_req = "1,0 (¡Ya aseguraste el 4.0!)"
+            estado_req = f"1,0 (¡Ya aseguraste el {formatear_con_coma(meta_actual)}!)"
         else:
             estado_req = f"{formatear_con_coma(promedio_req)}"
     else:
@@ -291,10 +311,11 @@ for ramo in df_panel["Asignatura"].unique():
         
     resumen_resultados.append({
         "Asignatura": ramo,
+        "Meta Promedio": formatear_con_coma(meta_actual),
         "NP Actual (Evaluado)": formatear_con_coma(np_actual),
         "% Evaluado": f"{int(sum_pond_rendida * 100)}%",
         "Evaluaciones Pendientes": len(df_pendientes),
-        "Nota promedio requerida en pendientes (para 4.0)": estado_req
+        f"Nota promedio requerida en pendientes (para {formatear_con_coma(meta_actual)})": estado_req
     })
     
     st.divider()
