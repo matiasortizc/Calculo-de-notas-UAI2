@@ -129,6 +129,7 @@ if "paso_actual" not in st.session_state:
 
 def cambiar_paso(nuevo_paso):
     st.session_state["paso_actual"] = nuevo_paso
+    st.rerun()
 
 PLANTILLAS_RAMOS = {
     "CALCULO INTEGRAL": {
@@ -238,8 +239,7 @@ if st.session_state["paso_actual"] == 1:
         st.markdown("#### 🚀 Comenzar desde cero")
         st.write("Configura tus ramos, pruebas, controles y laboratorios paso a paso de forma personalizada.")
         if st.button("Comenzar Configuración ➔"):
-            st.session_state["paso_actual"] = 2
-            st.rerun()
+            cambiar_paso(2)
 
     with col_b:
         st.markdown("#### 📂 Cargar un respaldo existente")
@@ -317,7 +317,7 @@ elif st.session_state["paso_actual"] == 2:
         elif pct_acumulado < 100:
             st.warning(f"⚠️ Suma actual en **{nombre_ramo}**: **{pct_acumulado}%**. Falta asignar **{100 - pct_acumulado}%**.")
         else:
-            st.error(f"❌ La suma en **{nombre_ramo}** is **{pct_acumulado}%** (Supera el 100%). Ajusta los valores.")
+            st.error(f"❌ La suma en **{nombre_ramo}** es **{pct_acumulado}%** (Supera el 100%). Ajusta los valores.")
 
         if evaluaciones_ramo:
             estructura_ramos[nombre_ramo] = evaluaciones_ramo
@@ -329,14 +329,12 @@ elif st.session_state["paso_actual"] == 2:
     with col_n1:
         if st.button("⬅️ Volver a Bienvenida", use_container_width=True):
             cambiar_paso(1)
-            st.rerun()
     with col_n2:
         if st.button("Siguiente: Definir Metas ➔", use_container_width=True):
             if not estructura_ramos:
                 st.error("Debes seleccionar o configurar al menos un ramo antes de continuar.")
             else:
                 cambiar_paso(3)
-                st.rerun()
 
 # =========================================================
 # PASO 3: DEFINICIÓN DE METAS OBJETIVOS
@@ -350,7 +348,6 @@ elif st.session_state["paso_actual"] == 3:
         st.warning("No hay ramos configurados. Por favor regresa al Paso 2.")
         if st.button("⬅️ Ir a Configuración"):
             cambiar_paso(2)
-            st.rerun()
         st.stop()
 
     dict_metas = {}
@@ -376,11 +373,9 @@ elif st.session_state["paso_actual"] == 3:
     with col_n1:
         if st.button("⬅️ Volver a Configuración", use_container_width=True):
             cambiar_paso(2)
-            st.rerun()
     with col_n2:
         if st.button("Siguiente: Ingresar Notas ➔", use_container_width=True):
             cambiar_paso(4)
-            st.rerun()
 
 # =========================================================
 # PASO 4: INGRESO DE NOTAS Y RESULTADOS
@@ -421,7 +416,6 @@ elif st.session_state["paso_actual"] == 4:
         st.info("👈 No hay ramos configurados. Dirígete a la sección de configuración para comenzar.")
         if st.button("⬅️ Configurar Ramos"):
             cambiar_paso(2)
-            st.rerun()
         st.stop()
 
     df_panel = pd.DataFrame(lista_filas)
@@ -556,4 +550,3 @@ elif st.session_state["paso_actual"] == 4:
     st.markdown("---")
     if st.button("⬅️ Volver a Definición de Metas", use_container_width=True):
         cambiar_paso(3)
-        st.rerun()
