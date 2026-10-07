@@ -5,78 +5,66 @@ import json
 st.set_page_config(page_title="Calculadora de Notas UAI", page_icon="🎓", layout="wide")
 
 # ---------------------------------------------------------
-# ESTILOS CSS - PALETA MEJORADA: DARK SLATE & CYAN NEÓN
+# ESTILOS CSS - PALETA MODO CLARO SOFISTICADO (SOFT LIGHT)
 # ---------------------------------------------------------
 st.markdown("""
     <style>
-    /* Fondo principal Dark Slate ultra profundo */
+    /* Fondo principal Claro Sofisticado */
     .stApp {
-        background-color: #090D16 !important;
-        color: #F8FAFC !important;
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
     }
     
-    /* Barra lateral (Sidebar) */
+    /* Barra lateral (Sidebar) en Gris Claro Neutro */
     section[data-testid="stSidebar"] {
-        background-color: #0F172A !important;
-        border-right: 1px solid #1E293B !important;
+        background-color: #F8FAFC !important;
+        border-right: 1px solid #E2E8F0 !important;
     }
     
     /* Tipografía e Instrucciones */
     .stApp p, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp span {
-        color: #F8FAFC !important;
+        color: #0F172A !important;
     }
     
-    /* Encabezados destacados */
-    h1, h2, h3 {
-        letter-spacing: -0.02em;
-    }
-    
-    /* Contenedores, tarjetas e insumos con más espacio y profundidad */
+    /* Tarjetas, desplegables y campos de texto */
     div[data-testid="stExpander"], div[data-baseweb="input"], .stTextInput input, .stNumberInput input {
-        background-color: #111827 !important;
-        color: #FFFFFF !important;
-        border: 1px solid #1E293B !important;
-        border-radius: 10px;
-        padding: 4px;
+        background-color: #F8FAFC !important;
+        color: #0F172A !important;
+        border: 1px solid #CBD5E1 !important;
+        border-radius: 8px;
     }
     
-    /* Efecto hover y focus neón cian */
+    /* Enfoque visual suave en los inputs */
     .stTextInput input:focus, .stNumberInput input:focus {
-        border-color: #06B6D4 !important;
-        box-shadow: 0 0 8px rgba(6, 182, 212, 0.3) !important;
+        border-color: #4F46E5 !important;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
     }
     
-    /* Tarjetas de métricas */
+    /* Tarjetas Métricas */
     div[data-testid="stMetricValue"] {
-        color: #22D3EE !important;
+        color: #4F46E5 !important;
         font-weight: 700;
     }
     
-    /* Espaciado general entre bloques y contenedores */
-    .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 3rem !important;
-    }
-    
-    /* Separador visual limpio */
+    /* Separador visual elegante */
     hr {
-        border-color: #1E293B !important;
-        margin: 2rem 0 !important;
+        border-color: #E2E8F0 !important;
+        margin: 1.5rem 0 !important;
     }
     
-    /* Botones con color de acento Cian */
+    /* Botones principales con tono Índigo */
     div.stButton > button {
-        background-color: #0891B2 !important;
+        background-color: #4F46E5 !important;
         color: #FFFFFF !important;
         border: None !important;
         border-radius: 8px !important;
-        padding: 0.7rem 1.5rem !important;
+        padding: 0.6rem 1.2rem !important;
         font-weight: 600 !important;
         transition: all 0.2s ease !important;
     }
     div.stButton > button:hover {
-        background-color: #06B6D4 !important;
-        box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4) !important;
+        background-color: #4338CA !important;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2) !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -280,7 +268,7 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
 
     df_panel = pd.DataFrame(lista_filas)
 
-    # METAS POR ASIGNATURA EN BLOQUE INDEPENDIENTE
+    # METAS POR ASIGNATURA
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 🎯 Definir Metas Objetivos por Asignatura")
     
@@ -323,7 +311,7 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
     st.markdown("---")
 
     # ---------------------------------------------------------
-    # 3. PANEL DE CONTROL DE NOTAS (SEPARADO Y ORDENADO)
+    # 3. PANEL DE CONTROL DE NOTAS (COMPACTO Y ORDENADO)
     # ---------------------------------------------------------
     st.subheader("📝 Panel de Control de Notas")
     st.write("")
@@ -360,13 +348,6 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
             label="📊 Avance Evaluado", 
             value=f"{int(sum_pond_rendida_pre * 100)}%"
         )
-
-        pct_progreso = min(1.0, float(sum_pond_rendida_pre))
-        st.progress(
-            pct_progreso, 
-            text=f"Progreso evaluado: {int(sum_pond_rendida_pre * 100)}% completado ({int((1 - pct_progreso) * 100)}% pendiente)"
-        )
-        st.write("")
 
         cols_headers = st.columns([2.5, 1.5, 1.5, 2.5])
         cols_headers[0].markdown("**Evaluación**")
@@ -411,21 +392,21 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
             puntos_necesarios = (meta_actual * sum_pond_total) - puntos_actuales
             promedio_req = round(puntos_necesarios / sum_pond_pendiente, 2)
             if promedio_req > 7.0:
-                estado_req = f"{formatear_con_coma(promedio_req)} ⚠️ (Imposible llegar al {formatear_con_coma(meta_actual)})"
+                estado_req = f"{formatear_con_coma(promedio_req)} ⚠️ (Imposible)"
             elif promedio_req <= 1.0:
-                estado_req = f"1,0 (¡Ya aseguraste el {formatear_con_coma(meta_actual)}!)"
+                estado_req = f"1,0 (¡Asegurado!)"
             else:
                 estado_req = f"{formatear_con_coma(promedio_req)}"
         else:
-            estado_req = "Sin evaluaciones pendientes"
+            estado_req = "Sin pendientes"
             
         resumen_resultados.append({
             "Asignatura": ramo,
-            "Meta Promedio": formatear_con_coma(meta_actual),
-            "NP Actual (Evaluado)": formatear_con_coma(np_actual),
-            "% Evaluado": f"{int(sum_pond_rendida * 100)}%",
-            "Evaluaciones Pendientes": len(df_pendientes),
-            f"Nota promedio requerida en pendientes (para {formatear_con_coma(meta_actual)})": estado_req
+            "Meta": formatear_con_coma(meta_actual),
+            "NP Actual": formatear_con_coma(np_actual),
+            "Progreso": min(1.0, float(sum_pond_rendida)),
+            "Pendientes": len(df_pendientes),
+            "Nota Req. Pendientes": estado_req
         })
         
         st.markdown("<br>", unsafe_allow_html=True)
@@ -447,10 +428,31 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
         )
 
     # ---------------------------------------------------------
-    # 4. RESUMEN COMPARATIVO FINAL (SEPARADO)
+    # 4. RESUMEN COMPARATIVO FINAL (COMPACTO CON BARRA DE PROGRESO)
     # ---------------------------------------------------------
     if resumen_resultados:
         st.markdown("<br>", unsafe_allow_html=True)
         st.subheader("📊 Resumen Comparativo de Asignaturas")
         st.write("")
-        st.dataframe(pd.DataFrame(resumen_resultados), use_container_width=True)
+        
+        df_resumen = pd.DataFrame(resumen_resultados)
+        
+        # Formato de tabla achicada con barra de progreso visual incorporada en la columna
+        st.dataframe(
+            df_resumen,
+            use_container_width=True,
+            column_config={
+                "Progreso": st.column_config.ProgressColumn(
+                    "Progreso Evaluado",
+                    help="Porcentaje del ramo completado hasta el momento",
+                    format="%.0f%%",
+                    min_value=0,
+                    max_value=1.0,
+                ),
+                "Asignatura": st.column_config.Column("Asignatura", width="medium"),
+                "Meta": st.column_config.Column("Meta", width="small"),
+                "NP Actual": st.column_config.Column("NP Actual", width="small"),
+                "Pendientes": st.column_config.Column("Pendientes", width="small"),
+            },
+            hide_index=True
+        )
