@@ -87,7 +87,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# FUNCIONES AUXILIARES Y CALLBACK DE CARGA
+# FUNCIONES AUXILIARES
 # ---------------------------------------------------------
 def normalizar_nota(valor):
     try:
@@ -106,17 +106,22 @@ def formatear_con_coma(num):
         return f"{num:.1f}".replace('.', ',')
     return str(num).replace('.', ',')
 
+# Callback seguro para procesar la subida del archivo JSON sin romper widgets
 def procesar_carga_json():
     uploaded_file = st.session_state.get("file_uploader")
     if uploaded_file is not None:
         try:
             saved_data = json.load(uploaded_file)
-            keys_excluidas = ["menu_lateral_izquierdo", "file_uploader", "last_uploaded_filename"]
+            # Guardamos en un diccionario intermedio para asignación limpia
+            st.session_state["datos_cargados_json"] = saved_data
+            
+            # Cargar de forma segura valores que no sean widgets directos protegidos
             for k, v in saved_data.items():
-                if k not in keys_excluidas and isinstance(v, (int, float, str, bool, dict, list)):
+                if k not in ["menu_lateral_izquierdo", "file_uploader", "last_uploaded_filename", "selector_predeterminados", "num_custom_input"]:
                     st.session_state[k] = v
+                    
             st.session_state["last_uploaded_filename"] = uploaded_file.name
-            st.success("✅ ¡Respaldo cargado con éxito!")
+            st.success("✅ ¡Respaldo cargado con éxito! Ya puedes modificar tus notas.")
         except Exception as e:
             st.error(f"Error al leer el archivo JSON: {e}")
 
@@ -177,10 +182,10 @@ with st.sidebar:
         on_change=procesar_carga_json
     )
 
-    # Generación segura del respaldo mediante enlace HTML base64 (evita conflictos de session_state)
+    # Exportar estado actual limpio para respaldo
     datos_exportar = {
         k: v for k, v in st.session_state.items() 
-        if isinstance(v, (int, float, str, bool, dict, list)) and k not in ["file_uploader", "last_uploaded_filename", "menu_lateral_izquierdo"]
+        if isinstance(v, (int, float, str, bool, dict, list)) and k not in ["file_uploader", "last_uploaded_filename", "menu_lateral_izquierdo", "datos_cargados_json"]
     }
     json_str = json.dumps(datos_exportar, indent=2)
     b64 = base64.b64encode(json_str.encode()).decode()
@@ -202,6 +207,9 @@ with st.sidebar:
         ">📥 Descargar Respaldo (.json)</a>
     '''
     st.markdown(href, unsafe_allow_html=True)
+
+# Recuperar datos precargados del JSON si existen para usarlos como valores por defecto
+json_cache = st.session_state.get("datos_cargados_json", {})
 
 # =========================================================
 # VISTA 1: BIENVENIDA E INICIO
@@ -256,17 +264,20 @@ elif seccion == "⚙️ Configuración de Asignaturas":
         </div>
     """, unsafe_allow_html=True)
     
+    default_ramos_sel = json_cache.get("selector_predeterminados", st.session_state.get("selector_predeterminados", []))
+    
     st.markdown("### 📚 Ramos Predeterminados")
     ramos_pred_sel = st.multiselect(
         "Selecciona las asignaturas que cursas actualmente:",
         options=list(PLANTILLAS_RAMOS.keys()),
-        default=st.session_state.get("selector_predeterminados", []),
+        default=default_ramos_sel,
         key="selector_predeterminados"
     )
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 🛠️ Ramos Personalizados Adicionales")
-    num_custom = st.number_input("¿Cuántos ramos adicionales deseas crear desde cero?", min_value=0, max_value=10, value=st.session_state.get("num_custom_input", 0), key="num_custom_input")
+    default_num_custom = json_cache.get("num_custom_input", st.session_state.get("num_custom_input", 0))
+    num_custom = st.number_input("¿Cuántos ramos adicionales deseas crear desde cero?", min_value=0, max_value=10, value=int(default_num_custom), key="num_custom_input")
 
     lista_ramos_config = list(ramos_pred_sel) + [f"Asignatura Custom {i+1}" for i in range(int(num_custom))]
     
@@ -349,8 +360,7 @@ elif seccion == "🎯 Metas Objetivos":
     
     for idx_m, ramo in enumerate(estructura_ramos.keys()):
         key_meta = f"meta_promedio_{ramo}"
-        if key_meta not in st.session_state:
-            st.session_state[key_meta] = 4.0
+        default_meta_val = json_cache.get(key_meta, st.session_state.get(key_meta, 4.0))
 
         with cols_metas[idx_m % 3]:
             meta_promedio = st.number_input(
@@ -358,6 +368,7 @@ elif seccion == "🎯 Metas Objetivos":
                 min_value=1.0,
                 max_value=7.0,
                 step=0.1,
+                value=float(default_meta_val),
                 key=key_meta
             )
             dict_metas[ramo] = meta_promedio
@@ -381,10 +392,13 @@ elif seccion == "📝 Panel de Notas y Resultados":
             key_rendida = f"rend_{ramo}_{e['Evaluación']}"
             key_nota = f"nota_{ramo}_{e['Evaluación']}"
             
+            default_rendida = json_cache.get(key_rendida, st.session_state.get(key_rendida, False))
+            default_nota = json_cache.get(key_nota, st.session_state.get(key_nota, "5,0"))
+            
             if key_rendida not in st.session_state:
-                st.session_state[key_rendida] = False
+                st.session_state[key_rendida] = default_rendida
             if key_nota not in st.session_state:
-                st.session_state[key_nota] = "5,0"
+                st.session_state[key_nota] = default_nota
             
             rendida = st.session_state[key_rendida]
             nota_raw = st.session_state[key_nota]
