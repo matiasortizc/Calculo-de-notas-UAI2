@@ -136,7 +136,6 @@ with st.sidebar:
     st.caption("Matías Ortiz - UAI")
     st.divider()
     
-    # Menú directo a la izquierda
     seccion = st.radio(
         "📍 Selecciona una sección:",
         options=[
@@ -181,13 +180,49 @@ with st.sidebar:
     )
 
 # =========================================================
-# VISTA 1: BIENVENIDA E INICIO
+# VISTA 1: BIENVENIDA E INICIO (MÁS LLAMATIVA)
 # =========================================================
 if seccion == "👋 Bienvenida e Inicio":
-    st.title("Calculadora de notas - Matías Ortiz - UAI")
-    st.markdown("### 👋 Bienvenid@ a la plataforma de simulación académica")
-    st.write("Esta herramienta está diseñada para gestionar tus calificaciones de la **Universidad Adolfo Ibáñez**, permitiéndote simular notas y calcular promedios requeridos.")
-    st.info("👈 Utiliza el menú lateral de la izquierda para ingresar al tiro a la sección que desees consultar o editar.")
+    
+    # Encabezado principal tipo Banner
+    st.markdown("""
+        <div style="background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%); padding: 2.5rem 2rem; border-radius: 12px; border: 1px solid #4C1D95; text-align: center; margin-bottom: 1.5rem;">
+            <h1 style="color: #F8FAFC !important; font-size: 2.2rem !important; margin-bottom: 0.5rem;">🎓 Calculadora de notas - Matías Ortiz - UAI</h1>
+            <p style="color: #C7D2FE !important; font-size: 1.1rem !important; max-width: 700px; margin: 0 auto;">
+                Controla, simula y proyecta tus calificaciones de la <b>Universidad Adolfo Ibáñez</b> con precisión matemática y en tiempo real.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Tarjetas de características / pasos destacados
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+            <div style="background-color: #151C2C; padding: 1.2rem; border-radius: 10px; border: 1px solid #2A354F; height: 100%;">
+                <h3 style="color: #A78BFA !important; margin-top: 0;">📚 1. Configura</h3>
+                <p style="color: #94A3B8 !important; font-size: 0.85rem !important;">Elige tus ramos predeterminados o personaliza tus ponderaciones de forma exacta (100%).</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+            <div style="background-color: #151C2C; padding: 1.2rem; border-radius: 10px; border: 1px solid #2A354F; height: 100%;">
+                <h3 style="color: #A78BFA !important; margin-top: 0;">🎯 2. Define Metas</h3>
+                <p style="color: #94A3B8 !important; font-size: 0.85rem !important;">Establece el promedio objetivo que deseas alcanzar al finalizar tu semestre.</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col3:
+        st.markdown("""
+            <div style="background-color: #151C2C; padding: 1.2rem; border-radius: 10px; border: 1px solid #2A354F; height: 100%;">
+                <h3 style="color: #A78BFA !important; margin-top: 0;">📈 3. Simula Notas</h3>
+                <p style="color: #94A3B8 !important; font-size: 0.85rem !important;">Calcula automáticamente cuánto necesitas en tus evaluaciones pendientes.</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.info("💡 **Tip:** Dirígete al menú lateral izquierdo y haz clic en **⚙️ Configuración de Asignaturas** para empezar a armar tu semestre al tiro.")
 
 # =========================================================
 # VISTA 2: CONFIGURACIÓN DE ASIGNATURAS
