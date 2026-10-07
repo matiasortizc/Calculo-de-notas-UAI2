@@ -5,66 +5,99 @@ import json
 st.set_page_config(page_title="Calculadora de Notas UAI", page_icon="🎓", layout="wide")
 
 # ---------------------------------------------------------
-# ESTILOS CSS - PALETA: DARK SLATE & VIOLETA NEÓN
+# ESTILOS CSS - COMPACTO, ULTRA-ESTILIZADO Y DARK SLATE
 # ---------------------------------------------------------
 st.markdown("""
     <style>
-    /* Fondo principal Dark Slate nocturno */
+    /* 1. Fondo principal y texto general */
     .stApp {
         background-color: #0B0F19 !important;
         color: #F8FAFC !important;
+        font-size: 0.88rem !important; /* Fuente general más pequeña */
     }
     
-    /* Barra lateral (Sidebar) */
+    /* 2. Barra lateral (Sidebar) compacta */
     section[data-testid="stSidebar"] {
         background-color: #111827 !important;
         border-right: 1px solid #1F2937 !important;
     }
+    section[data-testid="stSidebar"] .block-container {
+        padding-top: 1.5rem !important;
+    }
     
-    /* Tipografía e Instrucciones */
-    .stApp p, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp span {
+    /* 3. Reducción de títulos y encabezados */
+    h1 { font-size: 1.6rem !important; margin-bottom: 0.3rem !important; }
+    h2 { font-size: 1.3rem !important; margin-bottom: 0.3rem !important; }
+    h3 { font-size: 1.05rem !important; margin-bottom: 0.2rem !important; }
+    
+    /* 4. Disminución de fuentes en textos, etiquetas y spans */
+    .stApp p, .stApp label, .stApp span, div[data-testid="stMarkdownContainer"] p {
+        font-size: 0.88rem !important;
         color: #F8FAFC !important;
     }
     
-    /* Tarjetas, desplegables y campos de texto */
+    /* 5. Insumos y campos de texto ajustados (Padding reducido) */
     div[data-testid="stExpander"], div[data-baseweb="input"], .stTextInput input, .stNumberInput input {
         background-color: #151C2C !important;
         color: #FFFFFF !important;
         border: 1px solid #2A354F !important;
-        border-radius: 8px;
+        border-radius: 6px !important;
+        padding: 2px 8px !important; /* Espaciado interno más delgado */
+        font-size: 0.85rem !important;
     }
     
-    /* Borde en enfoque neón violeta */
+    /* Enfoque visual sutil */
     .stTextInput input:focus, .stNumberInput input:focus {
         border-color: #8B5CF6 !important;
-        box-shadow: 0 0 8px rgba(139, 92, 246, 0.4) !important;
+        box-shadow: 0 0 6px rgba(139, 92, 246, 0.3) !important;
     }
     
-    /* Tarjetas Métricas con violeta brillante */
+    /* 6. Tarjetas Métricas Achicadas (st.metric) */
+    div[data-testid="stMetric"] {
+        background-color: #151C2C !important;
+        border: 1px solid #2A354F !important;
+        border-radius: 6px !important;
+        padding: 8px 12px !important;
+    }
     div[data-testid="stMetricValue"] {
         color: #A78BFA !important;
-        font-weight: 700;
+        font-size: 1.25rem !important; /* Valor numérico más compacto */
+        font-weight: 700 !important;
+    }
+    div[data-testid="stMetricLabel"] {
+        font-size: 0.78rem !important;
     }
     
-    /* Separador visual */
+    /* 7. Desplegables (st.expander) con menos relleno */
+    div[data-testid="stExpander"] details summary {
+        padding: 6px 12px !important;
+        font-size: 0.9rem !important;
+    }
+    
+    /* 8. Separadores y márgenes verticales ajustados */
     hr {
         border-color: #1F2937 !important;
-        margin: 1.5rem 0 !important;
+        margin: 0.8rem 0 !important;
+    }
+    .block-container {
+        padding-top: 1.5rem !important;
+        padding-bottom: 2rem !important;
     }
     
-    /* Botones principales con acento Violeta */
+    /* 9. Botones achicados */
     div.stButton > button {
         background-color: #7C3AED !important;
         color: #FFFFFF !important;
         border: None !important;
-        border-radius: 8px !important;
-        padding: 0.6rem 1.2rem !important;
+        border-radius: 6px !important;
+        padding: 0.35rem 0.85rem !important;
+        font-size: 0.82rem !important;
         font-weight: 600 !important;
         transition: all 0.2s ease !important;
     }
     div.stButton > button:hover {
         background-color: #8B5CF6 !important;
-        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4) !important;
+        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3) !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -331,8 +364,7 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
         puntos_actuales_pre = (df_ramo_pre["Nota Obtenida / Requerida"] * df_ramo_pre["_pond_dec"]).sum()
         np_actual_pre = round(puntos_actuales_pre / sum_pond_rendida_pre, 2) if sum_pond_rendida_pre > 0 else 0.0
 
-        # Expander individual por asignatura
-        with st.expander(f"📘 {ramo} (Ponderado actual: {formatear_con_coma(np_actual_pre)} | Avance: {int(sum_pond_rendida_pre * 100)}%)", expanded=False):
+        with st.expander(f"📘 {ramo} (Ponderado: {formatear_con_coma(np_actual_pre)} | Avance: {int(sum_pond_rendida_pre * 100)}%)", expanded=False):
             
             diferencia_meta = round(np_actual_pre - meta_actual, 2) if sum_pond_rendida_pre > 0 else 0.0
 
@@ -354,7 +386,7 @@ if opcion_menu == "🎓 Calcular mis notas de la universidad":
             pct_progreso = min(1.0, float(sum_pond_rendida_pre))
             st.progress(
                 pct_progreso, 
-                text=f"Progreso evaluado del ramo: {int(sum_pond_rendida_pre * 100)}% completado ({int((1 - pct_progreso) * 100)}% pendiente)"
+                text=f"Progreso evaluado: {int(sum_pond_rendida_pre * 100)}% completado ({int((1 - pct_progreso) * 100)}% pendiente)"
             )
             st.write("")
 
