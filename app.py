@@ -65,17 +65,21 @@ st.title("🎓 Calculadora Dinámica. MATIAS ORTIZ - UAI")
 st.caption("Configura tus asignaturas asegurando que los porcentajes sumen exactamente 100%. Guardado automático disponible vía respaldo.")
 
 # ---------------------------------------------------------
-# MENÚ INICIAL DE BIENVENIDA
+# MENÚ INICIAL DE BIENVENIDA (INICIA EN BLANCO)
 # ---------------------------------------------------------
 st.markdown("---")
 st.subheader("👋 ¡Hola! ¿Qué deseas hacer hoy?")
 
 opcion_menu = st.radio(
-    "Selecciona una opción para continuar:",
+    "Selecciona una opción para desplegar las herramientas disponibles:",
     options=["🎓 Calcular mis notas de la universidad"],
-    index=0,
+    index=None,  # Inicia en blanco sin opción seleccionada por defecto
     key="opcion_menu_principal"
 )
+
+# Mensaje guíador si aún no se selecciona nada
+if opcion_menu is None:
+    st.info("👆 Selecciona la opción superior para comenzar a gestionar y calcular tus calificaciones.")
 
 st.markdown("---")
 
