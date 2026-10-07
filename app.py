@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 
-st.set_page_config(page_title="Calculadora de Notas UAI", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="Calculadora de notas - Matías Ortiz - UAI", page_icon="🎓", layout="wide")
 
 # ---------------------------------------------------------
 # ESTILOS CSS COMPACTOS - PALETA DARK SLATE & VIOLETA NEÓN
@@ -132,19 +132,38 @@ PLANTILLAS_RAMOS = {
 }
 
 # ---------------------------------------------------------
-# BARRA LATERAL (RESPALDO Y NAVEGACIÓN DIRECTA)
+# BARRA LATERAL (NAVEGACIÓN DIRECTA Y RESPALDO)
 # ---------------------------------------------------------
 with st.sidebar:
     st.title("🎓 Calculadora UAI")
     st.caption("MATIAS ORTIZ - UAI")
     st.divider()
     
-    st.markdown("### 📍 Secciones del Sistema")
-    st.button("1. Bienvenida e Inicio", on_click=cambiar_paso, args=(1,), use_container_width=True)
-    st.button("2. Configurar Asignaturas", on_click=cambiar_paso, args=(2,), use_container_width=True)
-    st.button("3. Definir Metas Objetivos", on_click=cambiar_paso, args=(3,), use_container_width=True)
-    st.button("4. Ingresar Notas y Resultados", on_click=cambiar_paso, args=(4,), use_container_width=True)
+    st.markdown("### 📍 Navegación de Pasos")
     
+    # Mapeo de nombres para el menú desplegable lateral
+    pasos_map = {
+        "1. Bienvenida e Inicio": 1,
+        "2. Configurar Asignaturas": 2,
+        "3. Definir Metas Objetivos": 3,
+        "4. Ingresar Notas y Resultados": 4
+    }
+    
+    paso_inverso = {v: k for k, v in pasos_map.items()}
+    nombre_paso_actual = paso_inverso.get(st.session_state["paso_actual"], "1. Bienvenida e Inicio")
+    
+    seleccion_sidebar = st.selectbox(
+        "Ir directamente a:",
+        options=list(pasos_map.keys()),
+        index=list(pasos_map.keys()).index(nombre_paso_actual),
+        key="select_navegacion_lateral"
+    )
+    
+    nuevo_paso_elegido = pasos_map[seleccion_sidebar]
+    if nuevo_paso_elegido != st.session_state["paso_actual"]:
+        st.session_state["paso_actual"] = nuevo_paso_elegido
+        st.rerun()
+
     st.divider()
     st.header("💾 Respaldar y Cargar Notas")
     uploaded_file = st.file_uploader("Subir respaldo (.json)", type=["json"], key="file_uploader")
@@ -164,7 +183,7 @@ with st.sidebar:
 
     datos_exportar = {
         k: v for k, v in st.session_state.items() 
-        if isinstance(v, (int, float, str, bool)) and k not in ["file_uploader", "last_uploaded_filename", "paso_actual"]
+        if isinstance(v, (int, float, str, bool)) and k not in ["file_uploader", "last_uploaded_filename", "paso_actual", "select_navegacion_lateral"]
     }
     json_str = json.dumps(datos_exportar, indent=2)
     
@@ -295,7 +314,7 @@ elif st.session_state["paso_actual"] == 2:
 # =========================================================
 elif st.session_state["paso_actual"] == 3:
     st.title("🎯 Paso 3: Definir Metas Objetivos")
-    st.caption("Establece la nota final promedio que deseas obtener en cada una de tus asignaturas.")
+    st.caption("Establece la nota final promedio que deseas obtener en cada una de todas tus asignaturas.")
     
     estructura_ramos = st.session_state.get("estructura_ramos_cache", {})
     if not estructura_ramos:
@@ -339,7 +358,6 @@ elif st.session_state["paso_actual"] == 4:
     
     estructura_ramos = st.session_state.get("estructura_ramos_cache", {})
     
-    # Procesamiento dinámico de filas
     lista_filas = []
     for ramo, evals in estructura_ramos.items():
         for e in evals:
@@ -375,7 +393,6 @@ elif st.session_state["paso_actual"] == 4:
 
     df_panel = pd.DataFrame(lista_filas)
     
-    # Cálculo de notas requeridas según metas
     dict_metas = {}
     for ramo in df_panel["Asignatura"].unique():
         key_meta = f"meta_promedio_{ramo}"
