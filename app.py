@@ -28,13 +28,11 @@ st.markdown("""
     h2 { font-size: 1.3rem !important; margin-bottom: 0.3rem !important; }
     h3 { font-size: 1.1rem !important; margin-bottom: 0.2rem !important; }
     
-    /* Textos generales de la aplicación */
     .stApp p, .stApp label, .stApp span, div[data-testid="stMarkdownContainer"] p {
         font-size: 0.92rem !important;
         color: #F8FAFC !important;
     }
     
-    /* Métricas principales con tamaño cómodo y destacado (NO achicadas) */
     div[data-testid="stMetric"] {
         background-color: #151C2C !important;
         border: 1px solid #2A354F !important;
@@ -51,7 +49,6 @@ st.markdown("""
         font-weight: 700 !important;
     }
     
-    /* Controles de evaluaciones y tareas (más compactos) */
     div[data-testid="stExpander"], div[data-baseweb="input"], .stTextInput input, .stNumberInput input {
         background-color: #151C2C !important;
         color: #FFFFFF !important;
@@ -163,17 +160,19 @@ with st.sidebar:
         if st.session_state.get("last_uploaded_filename") != uploaded_file.name:
             try:
                 saved_data = json.load(uploaded_file)
+                # Restauración segura filtrando tipos correctos
                 for k, v in saved_data.items():
-                    st.session_state[k] = v
+                    if isinstance(v, (int, float, str, bool, dict, list)):
+                        st.session_state[k] = v
                 st.session_state["last_uploaded_filename"] = uploaded_file.name
-                st.success("✅ ¡Notas cargadas!")
+                st.success("✅ ¡Respaldo cargado con éxito!")
                 st.rerun()
-            except Exception:
-                st.error("Error al cargar el archivo de respaldo.")
+            except Exception as e:
+                st.error(f"Error al leer el archivo JSON: {e}")
 
     datos_exportar = {
         k: v for k, v in st.session_state.items() 
-        if isinstance(v, (int, float, str, bool)) and k not in ["file_uploader", "last_uploaded_filename"]
+        if isinstance(v, (int, float, str, bool, dict, list)) and k not in ["file_uploader", "last_uploaded_filename"]
     }
     json_str = json.dumps(datos_exportar, indent=2)
     
@@ -430,7 +429,6 @@ elif seccion == "📝 Panel de Notas y Resultados":
             
             diferencia_meta = round(np_actual_pre - meta_actual, 2) if sum_pond_rendida_pre > 0 else 0.0
 
-            # Métricas principales con tamaño cómodo y destacado
             col_m1, col_m2, col_m3 = st.columns(3)
             col_m1.metric(
                 label="📈 Nota Ponderada Actual", 
@@ -453,7 +451,6 @@ elif seccion == "📝 Panel de Notas y Resultados":
             )
             st.write("")
 
-            # Cabeceras compactas solo para las pruebas/tareas
             cols_headers = st.columns([2.5, 1.5, 1.5, 2.5])
             cols_headers[0].markdown("**Evaluación**")
             cols_headers[1].markdown("**Ponderación**")
